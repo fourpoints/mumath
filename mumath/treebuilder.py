@@ -1,15 +1,7 @@
 import re
-import xml.etree.cElementTree as ET
+import xml.etree.ElementTree as ET
 from .Context import ContextManager as CM
 from .Token import MObject, MGroup, MAction
-
-"""
-Bugfixes:
-\pre goes from [p:] not [p-1:]
-token is dict attrib, not class attrib
-argument regex was improper
-bracket[3]
-"""
 
 def treebuilder(text, **options):
 	"""
@@ -132,7 +124,7 @@ def Tokenizer(text):
 		type_, j = collect_bracketed(p)
 		return MAction("NONE", {}, "CLOSETABLE", type_), j
 
-	def cast(tag, kind, p):
+	def cast(p, tag, kind):
 		text, j = collect_bracketed(p)
 		return MObject(tag, {}, kind, text), j
 
@@ -154,28 +146,29 @@ def Tokenizer(text):
 		if mObject_or_Action:
 			return mObject_or_Action, p+i
 
+		from functools import partial
 		mObject_or_Action, j = {
-			r"\attr"  : attr(p+i),
-			r"\class" : class_(p+i),
-			r"\id"    : id_(p+i),
+			r"\attr"  : attr,
+			r"\class" : class_,
+			r"\id"    : id_,
 
-			r"\begin" : begin(p+i),
-			r"\end"   : end(p+i),
+			r"\begin" : begin,
+			r"\end"   : end,
 
  			# CAST
-			r"\var"    : cast("mi", "var", p+i),
-			r"\num"    : cast("mn", "numeric", p+i),
-			r"\op"     : cast("mo", "operator", p+i),
-			r"\string" : cast("ms", "string", p+i),
-			r"\space"  : cast("mspace", "space", p+i),
-			r"\text"   : cast("mtext", "text", p+i),
-		}.get(text[p:p+i], (None, 0))
+			r"\var"    : partial(cast, tag="mi", kind="var"),
+			r"\num"    : partial(cast, tag="mn", kind="numeric"),
+			r"\op"     : partial(cast, tag="mo", kind="operator"),
+			r"\string" : partial(cast, tag="ms", kind="string"),
+			r"\space"  : partial(cast, tag="mspace", kind="space"),
+			r"\text"   : partial(cast, tag="mtext", kind="kind=text"),
+		}.get(text[p:p+i], lambda p: (None, 0))(p+i)
 
 		if mObject_or_Action:
 			return mObject_or_Action, p+i+j+1
 
 		# Error
-		return MObject("mi", {"class": "UNKNOWN"}, "UNKNOWN", text[p:p+i]), p+i
+		return MObject("merror", {"class": "UNKNOWN"}, "UNKNOWN", text[p:p+i]), p+i
 
 
 	# Simple tokens
@@ -196,18 +189,18 @@ def Tokenizer(text):
 	CHAR_TOKENS = {
 		"alpha"    : dict.fromkeys(iter(ALPHABET), alpha),
 		"numeric"  : dict.fromkeys(iter("0123456789"), numeric),
-		"operator" : dict.fromkeys(iter("+-*/"), operator),
+		"operator" : dict.fromkeys(iter("+-*/'!#"), operator),
 		"relation" : dict.fromkeys(iter("<=>"), relation),
 		"open"     : dict.fromkeys(iter("{[("), open_),
 		"close"    : dict.fromkeys(iter("}])"), close),
 		"supp"     : dict.fromkeys(iter("^"), supp),
 		"subb"     : dict.fromkeys(iter("_"), subb),
-		"sep"      : dict.fromkeys(iter(",.|"), sep),
+		"sep"      : dict.fromkeys(iter(",.|:"), sep),
 		"eol"      : dict.fromkeys(iter("\n"), eol),
 		#comment  : dict.fromkeys(iter("%"), comme), #ironic that the comment is
 		"text"     : dict.fromkeys(iter("$"), text_),
 		"divider"  : dict.fromkeys(iter("&"), divider),
-		"space"    : dict.fromkeys(iter(" "), space),
+		"space"    : dict.fromkeys(iter(" \t"), space),
 		"action"    : dict.fromkeys(iter("\\"), action),
 	}
 
@@ -497,8 +490,8 @@ def process(tree):
 	def accent(tree, p):
 		action = tree.children[p]
 
-		accenting = MGroup("mover", action.attr, "TREE", [])
-		accent = MObject(action.tag, {}, "accent", action.targs)
+		accenting = MGroup(action.tag, action.attr, "TREE", [])
+		accent = MObject("mo", {}, "accent", action.targs)
 		accented = tree.children.pop(p+1)
 
 		accenting.children.append(accented)
@@ -774,7 +767,7 @@ def align(tree, counter):
 		#numbering:
 		matrix_cell = MGroup("mtd", {}, "TREE", [])
 		matrix_row.children.append(matrix_cell)
-		matrix_numbering = MObject("mn", {"columnalign": "right"}, "var", str(counter))
+		matrix_numbering = MObject("mtext", {"columnalign": "right"}, "var", f"({counter})")
 		matrix_cell.children.append(matrix_numbering)
 		counter += 1
 
@@ -919,7 +912,7 @@ class Math(Node):
 
 		try:
 			self.attrib.pop("align")
-			align(tree, counter = 0)
+			align(tree, counter = 1)
 		except KeyError:
 			pass
 
