@@ -1,3 +1,8 @@
+SPACES = {
+	r"\quad" : ("mspace", {"width": "1em"}, "hardspace", ""),
+	r"\thinspace" : ("mspace", {"width": "1pt"}, "hardspace", ""),
+}
+
 GREEK = {
 	r"\alpha"       : ("mi", {}, "var", "&alpha;"),
 	r"\beta"        : ("mi", {}, "var", "&beta;"),
@@ -29,18 +34,18 @@ GREEK = {
 	r"\chi"         : ("mi", {}, "var", "&chi;"),
 	r"\psi"         : ("mi", {}, "var", "&psi;"),
 	r"\omega"       : ("mi", {}, "var", "&omega;"),
-	r"\Gamma"       : ("mo", {"form": "prefix"}, "operator", "&Gamma;"),
-	r"\Digamma"     : ("mo", {"form": "prefix"}, "operator", "&Gammad;"),
-	r"\Delta"       : ("mo", {"form": "prefix"}, "operator", "&Delta;"),
-	r"\Theta"       : ("mo", {"form": "prefix"}, "operator", "&Theta;"),
-	r"\Lambda"      : ("mo", {"form": "prefix"}, "operator", "&Lambda;"),
-	r"\Xi"          : ("mo", {"form": "prefix"}, "operator", "&Xi;"),
-	r"\Pi"          : ("mo", {"form": "prefix"}, "operator", "&Pi;"),
-	r"\Sigma"       : ("mo", {"form": "prefix"}, "operator", "&Sigma;"),
-	r"\Upsilon"     : ("mo", {"form": "prefix"}, "operator", "&Upsilon;"),
-	r"\Phi"         : ("mo", {"form": "prefix"}, "operator", "&Phi;"),
-	r"\Psi"         : ("mo", {"form": "prefix"}, "operator", "&Psi;"),
-	r"\Omega"       : ("mo", {"form": "prefix"}, "operator", "&Omega;"),
+	r"\Gamma"       : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Gamma;"),
+	r"\Digamma"     : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Gammad;"),
+	r"\Delta"       : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Delta;"),
+	r"\Theta"       : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Theta;"),
+	r"\Lambda"      : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Lambda;"),
+	r"\Xi"          : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Xi;"),
+	r"\Pi"          : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Pi;"),
+	r"\Sigma"       : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Sigma;"),
+	r"\Upsilon"     : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Upsilon;"),
+	r"\Phi"         : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Phi;"),
+	r"\Psi"         : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Psi;"),
+	r"\Omega"       : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Omega;"),
 }
 
 VARLETTERS = {
@@ -209,7 +214,7 @@ BIG_OP = {
 	r"\sum": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&sum;"),
 	r"\prod": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&prod;"),
 	r"\coprod": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&coprod;"),
-	r"\int": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&int;"),
+	r"\int": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&#x222B;"),
 	r"\iint": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&#x222C;"),
 	r"\iiint": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&#x222D;"),
 	r"\oint": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&#x2232;"),
@@ -246,6 +251,7 @@ FUNCTIONS = {
 	r"\argmin": ("mo", {"form": "prefix"}, "operator", "argmin"),
 	r"\det": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "det"),
 	r"\ker": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "ker"),
+	r"\mod": ("mo", {"form": "prefix", "lspace": "0"}, "operator", "mod"),
 }
 
 SETS = {
@@ -255,7 +261,7 @@ SETS = {
 	r"\integers": ("mi", {}, "constant", "&integers;"),
 	r"\rationals": ("mi", {}, "constant", "&rationals;"),
 	r"\algebraics": ("mi", {}, "constant", "&Aopf;"),
-	r"\reals": ("mi", {}, "constant", "&reals;"),
+	r"\reals": ("mi", {"fontsize": "1em"}, "constant", "&reals;"),
 	r"\imaginaries": ("mi", {}, "constant", "&Iopf;"),
 	r"\complexes": ("mi", {}, "constant", "&complexes;"),
 	r"\quaternions": ("mi", {}, "constant", "&quaternions;"),

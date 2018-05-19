@@ -24,6 +24,7 @@ for CONTEXT in CONTEXT_MAPS: CONTEXT_MAP.update(CONTEXT)
 
 UNICODE_MAP = dict()
 UNICODE_MAPS = [
+    U.SPACES,
     U.GREEK,
     U.VARLETTERS,
     U.PREFIX,
@@ -62,6 +63,8 @@ SYMBOL_MAP = {
     '\,' : (MObject, ("mo", {}, "InvisibleComma", "&ic;")),
     '\*' : (MObject, ("mo", {}, "InvisibleTimes", "&it;")),
     '\¤' : (MObject, ("mo", {}, "ApplyFunction", "&af;")),
+
+    "\!": (MObject, ("mo", {"form": "postfix", "lspace": "0"}, "operator", "!")),
 }
 
 # --- # --- # --- # --- # --- # --- # --- #

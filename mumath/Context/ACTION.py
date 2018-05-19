@@ -1,12 +1,13 @@
 GROUPERS = {
     # GROUPERS
 	r"\over" : ("mfrac", {}, "GROUPER", [-1, 1]),
+	r"\bover" : ("mfrac", {"bevelled": "true"}, "GROUPER", [-1, 1]),
 	r"\frac" : ("mfrac", {}, "GROUPER", [1, 2]),
 	r"\sub" : ("msub", {}, "GROUPER", [1, 2]),
 	r"\sup" : ("msup", {}, "GROUPER", [1, 2]),
 	r"\subsup" : ("msubsup", {}, "GROUPER", [1, 2, 3]),
-	r"\underset" : ("munder", {}, "GROUPER", [1, 2]),
-	r"\overset" : ("mover", {}, "GROUPER", [1, 2]),
+	r"\underset" : ("munder", {}, "GROUPER", [2, 1]),
+	r"\overset" : ("mover", {}, "GROUPER", [2, 1]),
 	r"\underover" : ("munderover", {}, "GROUPER", [1, 2, 3]),
 	r"\root" : ("mroot", {}, "GROUPER", [2, 1]),
 	r"\sqrt" : ("msqrt", {}, "GROUPER", [1]),
@@ -20,21 +21,22 @@ GROUPERS = {
 }
 
 ACCENTS = {
-	r"\hat": ("mo", {"accent": "true"}, "ACCENT", "&Hat;"),
-	r"\check": ("mo", {"accent": "true"}, "ACCENT", "&check;"),
-	r"\acute": ("mo", {"accent": "true"}, "ACCENT", "&acute;"),
-	r"\grave": ("mo", {"accent": "true"}, "ACCENT", "&grave;"),
-	r"\bar": ("mo", {"accent": "true"}, "ACCENT", "&horbar;"),
-	r"\vec": ("mo", {"accent": "true"}, "ACCENT", "&rarr;"), # "&#8407;"),
-	r"\dot": ("mo", {"accent": "true"}, "ACCENT", "&dot;"),
+	r"\hat": ("mover", {"accent": "true"}, "ACCENT", "&Hat;"),
+	r"\check": ("mover", {"accent": "true"}, "ACCENT", "&check;"),
+	r"\acute": ("mover", {"accent": "true"}, "ACCENT", "&acute;"),
+	r"\grave": ("mover", {"accent": "true"}, "ACCENT", "&grave;"),
+	r"\bar": ("mover", {"accent": "true"}, "ACCENT", "&horbar;"),
+	r"\vec": ("mover", {"accent": "true"}, "ACCENT", "&rarr;"), # "&#8407;"),
+	r"\dot": ("mover", {"accent": "true"}, "ACCENT", "&dot;"),
 	#"\ddot": "&ddot;",
-	r"\breve": ("mo", {"accent": "true"}, "ACCENT", "&breve;"),
-	r"\tilde": ("mo", {"accent": "true"}, "ACCENT", "&tilde;"),
-	r"\overline": ("mo", {}, "ACCENT", "&oline;"),
-		r"\ov": ("mo", {}, "ACCENT", "&OverBar;"), #???
+	r"\breve": ("mover", {"accent": "true"}, "ACCENT", "&breve;"),
+	r"\tilde": ("mover", {"accent": "true"}, "ACCENT", "&tilde;"),
+	r"\overline": ("mover", {}, "ACCENT", "&oline;"),
+		r"\ov": ("mover", {}, "ACCENT", "&OverBar;"), #???
+		r"\inverse": ("mover", {}, "ACCENT", "&OverBar;"), #???
 	#"\underline": "&uline;",
-	r"\underbrace": ("mo", {}, "ACCENT", "&UnderBrace;"), #???
-	r"\overbrace": ("mo", {}, "ACCENT", "&OverBrace;"), #???
+	r"\underbrace": ("munder", {}, "ACCENT", "&UnderBrace;"), #???
+	r"\overbrace": ("mover", {}, "ACCENT", "&OverBrace;"), #???
 }
 
 SEPARATORS = {
@@ -82,4 +84,6 @@ ATTRIBUTES = {
     r"\sf"     : ("NONE", {"mathvariant": "normal"}, "ATTRIBUTE", [1]),
     r"\mathtt" : ("NONE", {"mathvariant": "monospace"}, "ATTRIBUTE", [1]),
     r"\tt"     : ("NONE", {"mathvariant": "monospace"}, "ATTRIBUTE", [1]),
+
+    r"\displaystyle"     : ("NONE", {"displaystyle": "true"}, "ATTRIBUTE", [1]),
 }
