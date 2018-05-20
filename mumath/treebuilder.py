@@ -3,6 +3,16 @@ import xml.etree.ElementTree as ET
 from .Context import ContextManager as CM
 from .Token import MObject, MGroup, MAction
 
+"""
+Bugfixes:
+\pre goes from [p:] not [p-1:]
+token is dict attrib, not class attrib
+argument regex was improper
+bracket[3]
+\t not recognized
+mObject_or_Action=-dict returns func instead of value
+"""
+
 def treebuilder(text, **options):
 	"""
 	This function does things
@@ -106,27 +116,31 @@ def Tokenizer(text):
 
 	def attr(p):
 		attribute, j = collect_bracketed(p)
-		return MAction("NONE", {"unfinished": "unfinished"}, "ATTRIBUTE", [1]),j
+		return MAction("NULL", {"unfinished": "unfinished"}, "ATTRIBUTE", [1]),j
 
 	def class_(p):
 		class_name, j = collect_bracketed(p)
-		return MAction("NONE", {"class": class_name}, "ATTRIBUTE", [1]), j
+		return MAction("NULL", {"class": class_name}, "ATTRIBUTE", [1]), j
 
 	def id_(p):
 		id_name, j = collect_bracketed(p)
-		return MAction("NONE", {"id": id_name}, "ATTRIBUTE", [1]), j
+		return MAction("NULL", {"id": id_name}, "ATTRIBUTE", [1]), j
 
 	def begin(p):
 		type_, j = collect_bracketed(p)
-		return MAction("NONE", {}, "OPENTABLE", type_), j
+		return MAction("NULL", {}, "OPENTABLE", type_), j
 
 	def end(p):
 		type_, j = collect_bracketed(p)
-		return MAction("NONE", {}, "CLOSETABLE", type_), j
+		return MAction("NULL", {}, "CLOSETABLE", type_), j
 
-	def cast(p, tag, kind):
+	def cast(p, tag, type):
 		text, j = collect_bracketed(p)
-		return MObject(tag, {}, kind, text), j
+		return MObject(tag, {}, type, text), j
+
+	def reference(p):
+		url_id, j = collect_bracketed(p)
+		return MAction("NULL", {}, "REFERENCE", url_id[1:-1]), j
 
 	def action(p):
 		i = 1
@@ -146,7 +160,7 @@ def Tokenizer(text):
 		if mObject_or_Action:
 			return mObject_or_Action, p+i
 
-		from functools import partial
+		from functools import partial # fix: move to top
 		mObject_or_Action, j = {
 			r"\attr"  : attr,
 			r"\class" : class_,
@@ -156,12 +170,12 @@ def Tokenizer(text):
 			r"\end"   : end,
 
  			# CAST
-			r"\var"    : partial(cast, tag="mi", kind="var"),
-			r"\num"    : partial(cast, tag="mn", kind="numeric"),
-			r"\op"     : partial(cast, tag="mo", kind="operator"),
-			r"\string" : partial(cast, tag="ms", kind="string"),
-			r"\space"  : partial(cast, tag="mspace", kind="space"),
-			r"\text"   : partial(cast, tag="mtext", kind="kind=text"),
+			r"\var"    : partial(cast, tag="mi", type="var"),
+			r"\num"    : partial(cast, tag="mn", type="numeric"),
+			r"\op"     : partial(cast, tag="mo", type="operator"),
+			r"\string" : partial(cast, tag="ms", type="string"),
+			r"\space"  : partial(cast, tag="mspace", type="space"),
+			r"\text"   : partial(cast, tag="mtext", type="text"),
 		}.get(text[p:p+i], lambda p: (None, 0))(p+i)
 
 		if mObject_or_Action:
@@ -176,10 +190,10 @@ def Tokenizer(text):
 	relation = lambda p: (MObject("mo", {}, "relation", text[p]), p + 1)
 
 	sep = lambda p: (MAction("mo", {"fence": "true"}, "SEP", text[p]), p + 1)
-	eol      = lambda p: (MAction("NONE", {}, "EOL", text[p]), p + 1)
+	eol      = lambda p: (MAction("NULL", {}, "EOL", text[p]), p + 1)
 	text_    = lambda p: (MAction("mtext", {}, "TEXT", text[p]), p + 1)
-	divider  = lambda p: (MAction("NONE", {}, "TABLEDIV", text[p]), p + 1)
-	space    = lambda p: (MAction("NONE", {}, "SPACE", text[p]), p + 1)
+	divider  = lambda p: (MAction("NULL", {}, "TABLEDIV", text[p]), p + 1)
+	space    = lambda p: (MAction("NULL", {}, "SPACE", text[p]), p + 1)
 
 	other    = lambda p: (MObject("ms", {}, "UNKNOWN", text[p]), p + 1)
 
@@ -201,7 +215,8 @@ def Tokenizer(text):
 		"text"     : dict.fromkeys(iter("$"), text_),
 		"divider"  : dict.fromkeys(iter("&"), divider),
 		"space"    : dict.fromkeys(iter(" \t"), space),
-		"action"    : dict.fromkeys(iter("\\"), action),
+		"reference": dict.fromkeys(iter("@"), reference),
+		"action"   : dict.fromkeys(iter("\\"), action),
 	}
 
 	CHAR_MAP = {}
@@ -229,7 +244,7 @@ def fence(tokens):
 
 	def open_(p):
 		bracket = tokens[p]
-		tokens[p] = MAction("NONE", {}, "OPEN", [])
+		tokens[p] = MAction("NULL", {}, "OPEN", [])
 		if bracket.targs:
 			tokens.insert(p+1, MObject("mo", bracket.attr.copy(), "bracket", bracket.targs))
 			return p+2
@@ -237,7 +252,7 @@ def fence(tokens):
 
 	def close(p):
 		bracket = tokens[p]
-		tokens[p] = MAction("NONE", {}, "CLOSE", [])
+		tokens[p] = MAction("NULL", {}, "CLOSE", [])
 		if bracket.targs:
 			tokens.insert(p, MObject("mo", bracket.attr.copy(), "bracket", bracket.targs))
 			return p+2
@@ -245,7 +260,7 @@ def fence(tokens):
 
 	def left(p):
 		bracket = tokens[p+1]
-		tokens[p] = MAction("NONE", {}, "OPEN", [])
+		tokens[p] = MAction("NULL", {}, "OPEN", [])
 		if bracket[3]: # by index (expect targs, but anything goes)
 			tokens[p+1] = MObject("mo", bracket.attr.copy(), "bracket", bracket[3])
 			return p+2
@@ -262,7 +277,7 @@ def fence(tokens):
 
 	def right(p):
 		bracket = tokens[p+1]
-		tokens[p+1] = MAction("NONE", {}, "CLOSE", [])
+		tokens[p+1] = MAction("NULL", {}, "CLOSE", [])
 		if bracket[3]: # by index (expect targs, but anything goes)
 			tokens[p] = MObject("mo", bracket.attr.copy(), "bracket", bracket[3])
 			return p+2
@@ -337,6 +352,13 @@ def invisibles(tokens):
 	[var/numeric/constant/close]  [nothing->it]  [numeric/constant/open]
 	    [numeric/constant/close]  [nothing->it]  [var/numeric/constant/open]
 	              [var/operator]  [nothing->af]  [open]
+
+	Also correct -2 and +2 to prefixed operators (form="prefix") for - and +.
+
+	Also interpret double space as hard-space.
+	\int_0^100  200x
+	x \equiv 3  (\mod 4)
+	\\    1 & 0
 	"""
 
 	p = 0
@@ -754,6 +776,29 @@ def process(tree):
 
 	group(tree)
 
+def prefix(tree):
+	def op(tree, p):
+		if tree.children[p].text in {'+', '-'}:
+			if p == 0 or tree.children[p-1].type in {"operator", "relation", "bracket"}:
+				tree.children[p].attr.update(form="prefix")
+		return p+1
+
+	def subtree(tree, p):
+		subtree = tree.children[p]
+		itertree(subtree)
+		return p+1
+
+
+	def itertree(tree):
+		p = 0
+		while p < len(tree.children):
+			p = {
+				"TREE": subtree,
+				"operator": op,
+			}.get(tree.children[p].type, lambda tree, p: p+1)(tree, p)
+
+	itertree(tree)
+
 def align(tree, counter):
 	"""Aligns the tree in a table
 	"""
@@ -761,25 +806,46 @@ def align(tree, counter):
 
 	p = 0
 	while p < len(tree.children):
-		matrix_row = MGroup("mtr", {}, "TREE", [])
-		matrix_table.children.append(matrix_row)
 
 		#numbering:
-		matrix_cell = MGroup("mtd", {}, "TREE", [])
+		if isinstance(counter, int):
+			matrix_row = MGroup("mtr", {"id": f"eqn-{counter}"}, "TREE", [])
+			matrix_table.children.append(matrix_row)
+
+			matrix_cell = MGroup("mtd", {"style":"padding:0;"}, "TREE", [])
+			matrix_row.children.append(matrix_cell)
+
+			matrix_padding = MGroup("mpadded", {"width": "1em", "href": f"#eqn-{counter}"}, "TREE", [])
+			matrix_cell.children.append(matrix_padding)
+
+			matrix_numbering = MObject("mtext", {"columnalign": "right"}, "var", f"({counter})")
+			matrix_padding.children.append(matrix_numbering)
+
+			counter += 1
+		else:
+			matrix_row = MGroup("mtr", {}, "TREE", [])
+			matrix_table.children.append(matrix_row)
+
+		# For centering
+		matrix_cell = MGroup("mtd", {"style":"width:50%;padding:0;"}, "TREE",[])
 		matrix_row.children.append(matrix_cell)
-		matrix_numbering = MObject("mtext", {"columnalign": "right"}, "var", f"({counter})")
-		matrix_cell.children.append(matrix_numbering)
-		counter += 1
 
 		while tree.children[p].type not in {"NEWLINE"}:
 			matrix_cell = MGroup("mtd", {"columnalign": "left"}, "TREE", [])
 			matrix_row.children.append(matrix_cell)
 
 			while tree.children[p].type not in {"NEWLINE", "TABLEDIV"}:
-				matrix_cell.children.append(tree.children[p])
+				if tree.children[p].type == "REFERENCE":
+					matrix_row.attr["id"] = tree.children[p].targs
+				else:
+					matrix_cell.children.append(tree.children[p])
 
 				p += 1
 				if p >= len(tree.children): break
+
+			# For centering
+			matrix_cell = MGroup("mtd", {"style":"width:50%;padding:0;"}, "TREE",[])
+			matrix_row.children.append(matrix_cell)
 
 			if p >= len(tree.children): break
 			if tree.children[p].type == "TABLEDIV":
@@ -891,17 +957,10 @@ class Math(Node):
 
 	def parse(self):
 
-		# make element
-		# if normal:
-		#	- make element (mi, mn, mtable)
-		#	- check if succeeded by sub/sup (mmultiscripts)
-		#	- if big -> under/over
-		#	- check if succeeded by element -> &InvisibleTimes;
-		# if pre:
-		#	- get next element -> mmultiscripts
-		# if mo:
-		#	- check if it's function; is next element args? (postprocess?) &af;
+		# Update ContextManager maps
+		NotImplemented
 
+		# Parse list -> tree
 		tokens = list(Tokenizer(self.text))
 		fence(tokens)
 		changes(tokens)
@@ -909,12 +968,17 @@ class Math(Node):
 		tree = treeize(tokens)
 		classify(tree)
 		process(tree)
+		prefix(tree) # Correct + and -
 
 		try:
 			self.attrib.pop("align")
-			align(tree, counter = 1)
+			align(tree, counter = None)
 		except KeyError:
-			pass
+			try:
+				self.attrib.pop("numbering")
+				align(tree, counter = 1)
+			except KeyError:
+				pass
 
 		self.text = ""
 		mmlise(self, tree)
@@ -922,7 +986,8 @@ class Math(Node):
 		def treeprinter(tree, level):
 			input(" "*(level-1) + tree.tag + str(tree.attr))
 			for token in tree.children:
-				if isinstance(token, MGroup): treeprinter(token, level+1)
+				if isinstance(token, MGroup):
+					treeprinter(token, level+1)
 				if isinstance(token, MAction):
 					input(" "*level + token.tag + str(token.attr))
 				if isinstance(token, MObject):
