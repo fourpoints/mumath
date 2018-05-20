@@ -621,10 +621,13 @@ def process(tree):
 				else:
 					multiscripting.children.append(none)
 
-				if tree.children[p+j-1].type == "SUP":
-					multiscripting.children.append(tree.children[p+j])
-					j += 2
-				else:
+				try:
+					if tree.children[p+j-1].type == "SUP":
+						multiscripting.children.append(tree.children[p+j])
+						j += 2
+					else:
+						multiscripting.children.append(none)
+				except IndexError:
 					multiscripting.children.append(none)
 
 
@@ -673,10 +676,13 @@ def process(tree):
 				else:
 					multiscripting.children.append(none)
 
-				if tree.children[p+j-1].type == "SUP":
-					multiscripting.children.append(tree.children[p+j])
-					j += 2
-				else:
+				try:
+					if tree.children[p+j-1].type == "SUP":
+						multiscripting.children.append(tree.children[p+j])
+						j += 2
+					else:
+						multiscripting.children.append(none)
+				except IndexError:
 					multiscripting.children.append(none)
 
 
@@ -717,11 +723,13 @@ def process(tree):
 				k += 2
 			else:
 				multiscripting.children.append(none)
-
-			if tree.children[p+k+1].type == "SUP":
-				multiscripting.children.append(tree.children[p+k+2])
-				k += 2
-			else:
+			try:
+				if tree.children[p+k+1].type == "SUP":
+					multiscripting.children.append(tree.children[p+k+2])
+					k += 2
+				else:
+					multiscripting.children.append(none)
+			except IndexError:
 				multiscripting.children.append(none)
 
 		# prescripts
@@ -843,13 +851,14 @@ def align(tree, counter):
 				p += 1
 				if p >= len(tree.children): break
 
-			# For centering
-			matrix_cell = MGroup("mtd", {"style":"width:50%;padding:0;"}, "TREE",[])
-			matrix_row.children.append(matrix_cell)
+
 
 			if p >= len(tree.children): break
 			if tree.children[p].type == "TABLEDIV":
 				p += 1
+		# For centering
+		matrix_cell = MGroup("mtd", {"style":"width:50%;padding:0;"}, "TREE",[])
+		matrix_row.children.append(matrix_cell)
 		p += 1
 
 	del tree.children[:]
