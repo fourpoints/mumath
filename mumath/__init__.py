@@ -2,6 +2,6 @@
 File info
 """
 
-from .treebuilder import Math
+from .treebuilder import Math, UpdateContext, ClearContext
 
-__all__ = ['Math']
+__all__ = ['Math', "UpdateContext", "ClearContext"]
