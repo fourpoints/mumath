@@ -828,13 +828,13 @@ def align(tree, counter):
 
 		#numbering:
 		if isinstance(counter, int):
-			matrix_row = MGroup("mtr", {"id": f"eqn-{counter}"}, "TREE", [])
+			matrix_row = MGroup("mtr", {}, "TREE", [])
 			matrix_table.children.append(matrix_row)
 
 			matrix_cell = MGroup("mtd", {"style":"padding:0;"}, "TREE", [])
 			matrix_row.children.append(matrix_cell)
 
-			matrix_padding = MGroup("mpadded", {"width": "1em", "href": f"#eqn-{counter}"}, "TREE", [])
+			matrix_padding = MGroup("mpadded", {"id": f"eqn-{counter}", "width": "1em", "href": f"#eqn-{counter}"}, "TREE", [])
 			matrix_cell.children.append(matrix_padding)
 
 			matrix_numbering = MObject("mtext", {"columnalign": "right"}, "var", f"({counter})")
