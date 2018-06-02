@@ -15,7 +15,7 @@ GROUPERS = {
 	r"\choose" : ("mfrac", {"linethickness": "0"}, "GROUPER", [-1, 1]),
 	r"\enclose" : ("menclose", {}, "GROUPER", [1]),
 	r"\cancel" : ("menclose", {"notation": "updiagonalstrike"}, "GROUPER", [1]),
-	r"\pad" : ("mpadded", {}, "GROUPER", [1]),
+	r"\pad" : ("mpadded", {"lspace": "0.5em", "rspace": "0.5em"}, "GROUPER", [1]),
 	r"\prescript" : ("mmultiscripts", {}, "PRE", []),
 		r"\pre" : ("mmultiscripts", {}, "PRE", []),
 }
@@ -35,7 +35,7 @@ ACCENTS = {
 		r"\ov": ("mover", {}, "ACCENT", "&OverBar;"), #???
 		r"\inverse": ("mover", {}, "ACCENT", "&OverBar;"), #???
 	#"\underline": "&uline;",
-	r"\underbrace": ("munder", {}, "ACCENT", "&UnderBrace;"), #???
+	r"\underbrace": ("munder", {"moveablelimits": "true"}, "ACCENT", "&UnderBrace;"), #???
 	r"\overbrace": ("mover", {}, "ACCENT", "&OverBrace;"), #???
 }
 
@@ -84,6 +84,12 @@ ATTRIBUTES = {
     r"\sf"     : ("NONE", {"mathvariant": "normal"}, "ATTRIBUTE", [1]),
     r"\mathtt" : ("NONE", {"mathvariant": "monospace"}, "ATTRIBUTE", [1]),
     r"\tt"     : ("NONE", {"mathvariant": "monospace"}, "ATTRIBUTE", [1]),
+
+    r"\bit"     : ("NONE", {"mathvariant": "bold-italic"}, "ATTRIBUTE", [1]),
+    r"\bcal"     : ("NONE", {"mathvariant": "bold-script"}, "ATTRIBUTE", [1]),
+	r"\bfrak"     : ("NONE", {"mathvariant": "bold-fraktur"}, "ATTRIBUTE", [1]),
+	r"\bsf"     : ("NONE", {"mathvariant": "bold-sans-serif"}, "ATTRIBUTE", [1]),
+	r"\bsfit"     : ("NONE", {"mathvariant": "sans-serif-bold-italic"}, "ATTRIBUTE", [1]),
 
     r"\displaystyle"     : ("NONE", {"displaystyle": "true"}, "ATTRIBUTE", [1]),
 }
