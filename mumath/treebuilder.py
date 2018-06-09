@@ -793,7 +793,7 @@ def process(tree):
 def prefix(tree):
 	def op(tree, p):
 		if tree.children[p].text in {'+', '-'}:
-			if p == 0 or tree.children[p-1].type in {"operator", "relation", "bracket"}:
+			if p == 0 or tree.children[p-1].type in {"operator", "relation", "bracket", "sep"}:
 				tree.children[p].attr.update(form="prefix")
 		return p+1
 
