@@ -1,6 +1,7 @@
 SPACES = {
 	r"\quad" : ("mspace", {"width": "1em"}, "hardspace", ""),
 	r"\thinspace" : ("mspace", {"width": "1pt"}, "hardspace", ""),
+	r"\enspace" : ("mspace", {"width": "5pt"}, "hardspace", ""),
 }
 
 GREEK = {
@@ -284,7 +285,9 @@ FUNCTIONS = {
 	r"\exp": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "exp"),
 	r"\log": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "log"),
 	r"\lim": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "lim"),
+	r"\sup": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "sup"),
 	r"\limsup": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "limsup"),
+	r"\inf": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "inf"),
 	r"\liminf": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "liminf"),
 	r"\max": ("mo", {"form": "prefix", "rspace": "0", "moveablelimits": "true"}, "operator", "max"),
 	r"\argmax": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "argmax"),
@@ -293,6 +296,7 @@ FUNCTIONS = {
 	r"\det": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "det"),
 	r"\ker": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "ker"),
 	r"\mod": ("mo", {"form": "prefix", "lspace": "0"}, "operator", "mod"),
+	r"\sgn": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "sgn"),
 
 	r"\fourier": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "&Fouriertrf;"),
 	r"\laplace": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "&Laplacetrf;"),

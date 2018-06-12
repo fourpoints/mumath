@@ -3,7 +3,7 @@ COMMON = {
     "d" : ("mo", {"form": "prefix", "rspace": "0"}, "operator", "d"),
     "df" : ("mi", {"mathvariant": "italic"}, "var", "df"),
     "e" : ("mi", {}, "constant", "e"),
-    "E" : ("mo", {"rspace": "0"}, "operator", "E"),
+    #"E" : ("mo", {"rspace": "0"}, "operator", "E"),
     "f" : ("mo", {"mathvariant": "italic", "lspace": "0", "rspace": "0"}, "operator", "f"),
     "i" : ("mi", {"mathvariant": "italic"}, "constant", "i"),
     "j" : ("mi", {"mathvariant": "italic"}, "constant", "j"),
