@@ -14,7 +14,7 @@ ACTION_MAP
 CONTEXT_MAP = dict()
 CONTEXT_MAPS = [
     C.COMMON,
-    C.CHEMISTRY,
+    #C.CHEMISTRY,
 ]
 
 # Update CONTEXT_MAP

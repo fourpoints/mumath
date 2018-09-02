@@ -35,8 +35,8 @@ ACCENTS = {
 		r"\ov": ("mover", {}, "ACCENT", "&OverBar;"), #???
 		r"\inverse": ("mover", {}, "ACCENT", "&OverBar;"), #???
 	#"\underline": "&uline;",
-	r"\underbrace": ("munder", {"moveablelimits": "true"}, "ACCENT", "&UnderBrace;"), #???
-	r"\overbrace": ("mover", {}, "ACCENT", "&OverBrace;"), #???
+	r"\underbrace": ("munder", {"movablelimits": "false"}, "ACCENT", "&UnderBrace;"), #???
+	r"\overbrace": ("mover", {"movablelimits": "false"}, "ACCENT", "&OverBrace;"), #???
 }
 
 SEPARATORS = {

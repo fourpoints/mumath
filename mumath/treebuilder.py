@@ -144,8 +144,8 @@ def Tokenizer(text):
 		return MObject(tag, {}, type, text), j
 
 	def reference(p):
-		url_id, j = collect_bracketed(p)
-		return MAction("NULL", {}, "REFERENCE", url_id[1:-2]), j
+		url_id, j = collect_bracketed(p+1)
+		return MAction("NULL", {}, "REFERENCE", url_id), j+2
 
 	def action(p):
 		i = 1
@@ -209,7 +209,7 @@ def Tokenizer(text):
 	CHAR_TOKENS = {
 		"alpha"    : dict.fromkeys(iter(ALPHABET), alpha),
 		"numeric"  : dict.fromkeys(iter("0123456789"), numeric),
-		"operator" : dict.fromkeys(iter("+-*/'!#"), operator),
+		"operator" : dict.fromkeys(iter("+-*/'!#%"), operator),
 		"relation" : dict.fromkeys(iter("<=>"), relation),
 		"open"     : dict.fromkeys(iter("{[("), open_),
 		"close"    : dict.fromkeys(iter("}])"), close),
@@ -544,7 +544,7 @@ def process(tree):
 			pass
 
 		if i == 0: # Only sub (or under)
-			if "moveablelimits" in tree.children[p-1].attr: #under
+			if "movablelimits" in tree.children[p-1].attr: #under
 				undering = MGroup("munder", {}, "TREE", [])
 				undering.children.append(tree.children[p-1])
 				undering.children.append(tree.children[p+1])
@@ -570,7 +570,7 @@ def process(tree):
 
 		elif i == 2: #Possibly sub + sub or sup
 			if tree.children[p+i].type == "SUP":
-				if "moveablelimits" in tree.children[p-1].attr: #under
+				if "movablelimits" in tree.children[p-1].attr: #under
 					underovering = MGroup("munderover", {}, "TREE", [])
 					underovering.children.append(tree.children[p-1])
 					underovering.children.append(tree.children[p+1])
@@ -834,7 +834,7 @@ def align(tree, counter):
 			matrix_cell = MGroup("mtd", {"style":"padding:0;"}, "TREE", [])
 			matrix_row.children.append(matrix_cell)
 
-			matrix_padding = MGroup("mpadded", {"id": f"eqn-{counter}", "width": "1em", "href": f"#eqn-{counter}"}, "TREE", [])
+			matrix_padding = MGroup("mpadded", {"id": f"eqn-{counter}", "width": "2em", "href": f"#eqn-{counter}"}, "TREE", [])
 			matrix_cell.children.append(matrix_padding)
 
 			matrix_numbering = MObject("mtext", {"columnalign": "right"}, "var", f"({counter})")

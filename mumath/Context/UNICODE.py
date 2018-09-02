@@ -42,6 +42,7 @@ GREEK = {
 	r"\Lambda"      : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Lambda;"),
 	r"\Xi"          : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Xi;"),
 	r"\Pi"          : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Pi;"),
+	r"\Rho"          : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Rho;"),
 	r"\Sigma"       : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Sigma;"),
 	r"\Upsilon"     : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Upsilon;"),
 	r"\Phi"         : ("mo", {"form": "prefix", "lspace": "0", "rspace": "0"}, "operator", "&Phi;"),
@@ -69,6 +70,7 @@ INFIX = {
 	r"\cdot": ("mo", {"form": "infix"}, "operator", "&centerdot;"),
 	r"\cap": ("mo", {"form": "infix"}, "operator", "&cap;"),
 	r"\cup": ("mo", {"form": "infix"}, "operator", "&cup;"),
+	r"\given": ("mo", {"form": "infix"}, "operator", "&vert;"),
 	r"\uplus": ("mo", {"form": "infix"}, "operator", "&uplus;"),
 	r"\sqcap": ("mo", {"form": "infix"}, "operator", "&sqcap;"),
 	r"\sqcup": ("mo", {"form": "infix"}, "operator", "&sqcup;"),
@@ -105,7 +107,7 @@ INFIX = {
 }
 
 POSTFIX = {
-	r"\!": ("mo", {"form": "postfix"}, "operator", "&pm;"),
+	r"\!": ("mo", {"form": "infix"}, "operator", "&pm;"),
 }
 
 RELATIONS = {
@@ -146,6 +148,15 @@ RELATIONS = {
 	r"\perp": ("mo", {}, "relation", "&#x27c2;"),
 	r"\mid": ("mo", {}, "relation", "&mid;"),
 	r"\parallel": ("mo", {}, "relation", "&parallel;"),
+
+	r"\implies": ("mo", {}, "arrow", "&Implies;"),
+	r"\iff": ("mo", {}, "arrow", "&Leftrightarrow;"),
+	r"\equivalently": ("mo", {}, "arrow", "&Leftrightarrow;"),
+
+	r"\mapsto": ("mo", {}, "arrow", "&mapsto;"),
+	r"\to": ("mo", {}, "arrow", "&rightarrow;"),
+	r"\longmapsto": ("mo", {}, "arrow", "&longmapsto;"),
+	r"\leadsto": ("mo", {}, "arrow", "&rarrc;"),
 }
 
 NOTRELATIONS = {
@@ -186,6 +197,10 @@ NOTRELATIONS = {
 	#<\nperp> would be here
 	r"\nmid": ("mo", {}, "relation", "&nmid;"),
 	r"\nparallel": ("mo", {}, "relation", "&nparallel;"),
+
+	r"\nimplies": ("mo", {}, "arrow", "&nRightarrow;"),
+	r"\niff": ("mo", {}, "arrow", "&nLeftrightarrow;"),
+	r"\nequivalently": ("mo", {}, "arrow", "&nLeftrightarrow;"),
 }
 
 ARROWS = {
@@ -194,14 +209,9 @@ ARROWS = {
 	r"\twoheadleftarrow": ("mo", {}, "arrow", "&twoheadleftarrow;"),
 	r"\rightarrow": ("mo", {}, "arrow", "&rightarrow;"),
 	r"\Rightarrow": ("mo", {}, "arrow", "&Rightarrow;"),
-		r"\implies": ("mo", {}, "arrow", "&Implies;"),
 	r"\twoheadrightarrow": ("mo", {}, "arrow", "&twoheadrightarrow;"),
 	r"\leftrightarrow": ("mo", {}, "arrow", "&leftrightarrow;"),
 	r"\Leftrightarrow": ("mo", {}, "arrow", "&Leftrightarrow;"),
-		r"\iff": ("mo", {}, "arrow", "&Leftrightarrow;"),
-		r"\equivalently": ("mo", {}, "arrow", "&Leftrightarrow;"),
-	r"\mapsto": ("mo", {}, "arrow", "&mapsto;"),
-	r"\to": ("mo", {}, "arrow", "&rightarrow;"),
 	r"\hookleftarrow": ("mo", {}, "arrow", "&hookleftarrow;"),
 	r"\leftharpoonup": ("mo", {}, "arrow", "&leftharpoonup;"),
 	r"\leftharpoondown": ("mo", {}, "arrow", "&leftharpoondown;"),
@@ -212,11 +222,9 @@ ARROWS = {
 	r"\Longrightarrow": ("mo", {}, "arrow", "&Longrightarrow;"),
 	r"\longleftrightarrow": ("mo", {}, "arrow", "&longleftrightarrow;"),
 	r"\Longleftrightarrow": ("mo", {}, "arrow", "&Longleftrightarrow;"),
-	r"\longmapsto": ("mo", {}, "arrow", "&longmapsto;"),
 	r"\hookrightarrow": ("mo", {}, "arrow", "&hookrightarrow;"),
 	r"\righttharpoonup": ("mo", {}, "arrow", "&rightharpoonup;"),
 	r"\rightharpoondown": ("mo", {}, "arrow", "&rightharpoondown;"),
-	r"\leadsto": ("mo", {}, "arrow", "&rarrc;"),
 	r"\uparow": ("mo", {}, "arrow", "&uparrow;"),
 	r"\Uparrow": ("mo", {}, "arrow", "&Uparrow;"),
 	r"\downarrow": ("mo", {}, "arrow", "&downarrow;"),
@@ -253,24 +261,24 @@ MISC = {
 }
 
 BIG_OP = {
-	r"\sum": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&sum;"),
-	r"\prod": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&prod;"),
-	r"\coprod": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&coprod;"),
+	r"\sum": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&sum;"),
+	r"\prod": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&prod;"),
+	r"\coprod": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&coprod;"),
 	r"\int": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&#x222B;"),
 	r"\iint": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&#x222C;"),
 	r"\iiint": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&#x222D;"),
 	r"\oint": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&#x2232;"),
-	r"\bigcap": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&bigcap;"),
-	r"\intersection": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&Intersection;"),
-	r"\bigcup": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&bigcup;"),
-	r"\union": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&Union;"),
-	r"\bigsqcup": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&bigsqcup;"),
+	r"\bigcap": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&bigcap;"),
+	r"\intersection": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&Intersection;"),
+	r"\bigcup": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&bigcup;"),
+	r"\union": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&Union;"),
+	r"\bigsqcup": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&bigsqcup;"),
 	r"\bigvee": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&Vee;"),
 	r"\bigwedge": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&Wedge;"),
-	r"\bigodot": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&bigodot;"),
-	r"\bigotimes": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&bigotimes;"),
-	r"\bigoplus": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&bigoplus;"),
-	r"\biguplus": ("mo", {"form": "prefix", "largeop": "true", "moveablelimits": "true"}, "operator", "&biguplus;"),
+	r"\bigodot": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&bigodot;"),
+	r"\bigotimes": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&bigotimes;"),
+	r"\bigoplus": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&bigoplus;"),
+	r"\biguplus": ("mo", {"form": "prefix", "largeop": "true", "movablelimits": "true"}, "operator", "&biguplus;"),
 }
 
 FUNCTIONS = {
@@ -284,17 +292,18 @@ FUNCTIONS = {
 	r"\tanh": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "tanh"),
 	r"\exp": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "exp"),
 	r"\log": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "log"),
-	r"\lim": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "lim"),
-	r"\sup": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "sup"),
-	r"\limsup": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "limsup"),
-	r"\inf": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "inf"),
-	r"\liminf": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "liminf"),
-	r"\max": ("mo", {"form": "prefix", "rspace": "0", "moveablelimits": "true"}, "operator", "max"),
-	r"\argmax": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "argmax"),
-	r"\min": ("mo", {"form": "prefix", "rspace": "0", "moveablelimits": "true"}, "operator", "min"),
-	r"\argmin": ("mo", {"form": "prefix", "moveablelimits": "true"}, "operator", "argmin"),
-	r"\det": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "det"),
-	r"\ker": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "ker"),
+	r"\lim": ("mo", {"form": "prefix", "movablelimits": "true"}, "operator", "lim"),
+	r"\sup": ("mo", {"form": "prefix", "movablelimits": "true"}, "operator", "sup"),
+	r"\limsup": ("mo", {"form": "prefix", "movablelimits": "true"}, "operator", "limsup"),
+	r"\inf": ("mo", {"form": "prefix", "movablelimits": "true"}, "operator", "inf"),
+	r"\liminf": ("mo", {"form": "prefix", "movablelimits": "true"}, "operator", "liminf"),
+	r"\max": ("mo", {"form": "prefix", "rspace": "0", "movablelimits": "true"}, "operator", "max"),
+	r"\argmax": ("mo", {"form": "prefix", "movablelimits": "true"}, "operator", "argmax"),
+	r"\min": ("mo", {"form": "prefix", "rspace": "0", "movablelimits": "true"}, "operator", "min"),
+	r"\argmin": ("mo", {"form": "prefix", "movablelimits": "true"}, "operator", "argmin"),
+	r"\det": ("mo", {"form": "prefix", "lspace": "0"}, "operator", "det"),
+	r"\diag": ("mo", {"form": "prefix", "lspace": "0"}, "operator", "diag"),
+	r"\ker": ("mo", {"form": "prefix", "lspace": "0"}, "operator", "ker"),
 	r"\mod": ("mo", {"form": "prefix", "lspace": "0"}, "operator", "mod"),
 	r"\sgn": ("mo", {"form": "prefix", "rspace": "0"}, "operator", "sgn"),
 

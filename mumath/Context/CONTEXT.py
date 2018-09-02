@@ -15,7 +15,7 @@ CHEMISTRY = {
 	r"D"  : ("mi", {"mathvariant": "normal"}, "symbol", "D"), #Deuterium
 	r"T"  : ("mi", {"mathvariant": "normal"}, "symbol", "T"), #Tritium
 	r"H"  : ("mi", {"mathvariant": "normal"}, "symbol", "H"),
-	r"He" : ("mi", {"mathvariant": "normal"}, "symbol", "He", ),
+	r"He" : ("mi", {"mathvariant": "normal"}, "symbol", "He"),
 	r"Li" : ("mi", {"mathvariant": "normal"}, "symbol", "Li"),
 	r"Be" : ("mi", {"mathvariant": "normal"}, "symbol", "Be"),
 	r"C"  : ("mi", {"mathvariant": "normal"}, "symbol", "C"),
