@@ -668,7 +668,8 @@ def process(tree):
 			# Recursively apply to children
 			group(suping)
 
-		elif i > 2: #mmultiscripts
+
+		else: # i > 0 -- mmultiscripts (there is no msubsup as in the sub(i==2))
 			multiscripting = MGroup("mmultiscripts", {}, "TREE", [])
 			none = MObject("none", {}, "empty", [])
 
