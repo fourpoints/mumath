@@ -71,8 +71,10 @@ ATTRIBUTES = {
     r"\bb"     : ("NONE", {"mathvariant": "double-struck"}, "ATTRIBUTE", [1]),
     r"\mathfrak":("NONE", {"mathvariant": "fraktur"}, "ATTRIBUTE", [1]),
     r"\frak"   : ("NONE", {"mathvariant": "fraktur"}, "ATTRIBUTE", [1]),
-    r"\mathcal": ("NONE", {"mathvariant": "script"}, "ATTRIBUTE", [1]),
-    r"\cal"    : ("NONE", {"mathvariant": "script"}, "ATTRIBUTE", [1]),
+    r"\mathscr": ("NONE", {"mathvariant": "script"}, "ATTRIBUTE", [1]),
+    r"\scr"    : ("NONE", {"mathvariant": "script"}, "ATTRIBUTE", [1]),
+    r"\mathcal": ("NONE", {"mathvariant": "script", "class": "calligraphic"}, "ATTRIBUTE", [1]), # same
+    r"\cal"    : ("NONE", {"mathvariant": "script", "class": "calligraphic"}, "ATTRIBUTE", [1]), # same
 
     r"\mathrm" : ("NONE", {"mathvariant": "normal"}, "ATTRIBUTE", [1]),
     r"\rm"     : ("NONE", {"mathvariant": "normal"}, "ATTRIBUTE", [1]),
@@ -86,7 +88,8 @@ ATTRIBUTES = {
     r"\tt"     : ("NONE", {"mathvariant": "monospace"}, "ATTRIBUTE", [1]),
 
     r"\bit"     : ("NONE", {"mathvariant": "bold-italic"}, "ATTRIBUTE", [1]),
-    r"\bcal"     : ("NONE", {"mathvariant": "bold-script"}, "ATTRIBUTE", [1]),
+    r"\bscr"     : ("NONE", {"mathvariant": "bold-script"}, "ATTRIBUTE", [1]),
+    r"\bcal"     : ("NONE", {"mathvariant": "bold-script", "class": "calligraphic"}, "ATTRIBUTE", [1]),
 	r"\bfrak"     : ("NONE", {"mathvariant": "bold-fraktur"}, "ATTRIBUTE", [1]),
 	r"\bsf"     : ("NONE", {"mathvariant": "bold-sans-serif"}, "ATTRIBUTE", [1]),
 	r"\bsfit"     : ("NONE", {"mathvariant": "sans-serif-bold-italic"}, "ATTRIBUTE", [1]),
