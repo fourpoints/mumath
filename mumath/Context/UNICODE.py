@@ -330,7 +330,7 @@ SETS = {
 	r"\integers": ("mi", {}, "constant", "&integers;"),
 	r"\rationals": ("mi", {}, "constant", "&rationals;"),
 	r"\algebraics": ("mi", {}, "constant", "&Aopf;"),
-	r"\reals": ("mi", {"fontsize": "1em"}, "constant", "&reals;"),
+	r"\reals": ("mi", {}, "constant", "&reals;"),
 	r"\imaginaries": ("mi", {}, "constant", "&Iopf;"),
 	r"\complexes": ("mi", {}, "constant", "&complexes;"),
 	r"\quaternions": ("mi", {}, "constant", "&quaternions;"),
