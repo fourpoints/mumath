@@ -1,17 +1,45 @@
 import re
 import xml.etree.ElementTree as ET
 from .Context import ContextManager as CM
+from .Context import CUSTOM
 from .Token import MObject, MGroup, MAction
 
 """
-Bugfixes:
-\pre goes from [p:] not [p-1:]
-token is dict attrib, not class attrib
-argument regex was improper
-bracket[3]
-\t not recognized
-mObject_or_Action=-dict returns func instead of value
-Counter added
+- [o] Bugfixes:
+- [o] \pre goes from [p:] not [p-1:]
+- [o] token is dict attrib, not class attrib
+- [o] argument regex was improper
+- [x] bracket[3]
+	- see .Token refactoring
+- [?] \t not recognized
+- [?] mObject_or_Action=-dict returns func instead of value
+- [o] Counter added
+- [x] refactor Action to allow for more complex functions.
+	- remove tag?
+	- see .Token refactoring
+- [o] allow for more complex functions (nesting?)
+- [ ] simplify numeric expressions
+- [/] quirky: two &-aligned with different # of &'s will have a long <mtd>
+	because it will share width with the outer 50%-width cell
+- [ ] refactor .Token
+	- It seems originally Action was intended to mean ActionRequired, i.e. it had to be processed. However, its meaning is non-obvious, and it splits objects in a unnatural way.
+	- It might be more suitable to create a token type for each UPPERCASED TYPE
+	Suggestions:
+	- Rename Group->Branch, Object->Leaf, Action->Shape
+	- Combine Branch+Leaf to Node? (Almost all branches are of type 'TREE')
+	- Letr Branch be an Action
+	- Split Shape to Branch+Shape+Attribute?
+	- https://en.wikipedia.org/wiki/Tree_shaping
+- [ ] refactor symbol dictionary
+	# X = \bf{x} -- allow for inline (hidden) definitions
+	r"\hat": (None, None, "ACCENT", {
+		"args": [1],
+		"tree": ("mover", {"accent": "true"}, "TREE", [
+			("mo", {}, "accent", "&Hat;"}),
+			1
+		])
+	}),
+- [ ] find suitable syntax for vector/matrix macros
 """
 
 def treebuilder(text, **options):
@@ -107,7 +135,7 @@ def Tokenizer(text):
 			'{': '}',
 			'(': ')',
 			'[': ']',
-		}.get(opening, ' ') #possible bug source
+		}.get(opening, ' ') # FIXME possible bug source
 
 		j = 1
 		while text[p+j] != closing:
@@ -115,7 +143,7 @@ def Tokenizer(text):
 
 		return text[p+1:p+j], j
 
-	def attr(p):
+	def attributes(p):
 		attribute, j = collect_bracketed(p)
 		return MAction("NULL", {"unfinished": "unfinished"}, "ATTRIBUTE", [1]),j
 
@@ -158,16 +186,17 @@ def Tokenizer(text):
 		# Symbol is found
 		if i == 1: return CM.GET_SYMBOL_OR_DEFAULT(text[p:p+i+1]), p+i+1
 
-		# Try substitution
+		# Object or Action is found in ContextManager
 		mObject_or_Action = CM.GET_UNICODE(text[p:p+i])\
 			or CM.GET_ACTION(text[p:p+i])
 
 		if mObject_or_Action:
 			return mObject_or_Action, p+i
 
-		from functools import partial # fix: move to top
+		from functools import partial # FIXME: move to top
+		# Object or Action is found in built-ins
 		mObject_or_Action, j = {
-			r"\attr"  : attr,
+			r"\attr"  : attributes,
 			r"\class" : class_,
 			r"\id"    : id_,
 			r"\hover" : hover, #title attribute
@@ -239,20 +268,20 @@ def Tokenizer(text):
 
 
 def fence(tokens):
-	"""Pairs (brackets} (must not be of same type)
+	"""Pairs (brackets} (doesn't have to be of same type; e.g. intervals)
 	"""
 	def separator(p):
 		# Some separators may be brackets;
 		# if not, they're turned back into separators here.
 		sep = tokens[p]
-		tokens[p] = MObject("mo", sep.attr.copy(), "sep", sep.targs)
+		tokens[p] = MObject("mo", sep.attrib.copy(), "sep", sep.targs)
 		return p+1
 
 	def open_(p):
 		bracket = tokens[p]
 		tokens[p] = MAction("NULL", {}, "OPEN", [])
 		if bracket.targs:
-			tokens.insert(p+1, MObject("mo", bracket.attr.copy(), "bracket", bracket.targs))
+			tokens.insert(p+1, MObject("mo", bracket.attrib.copy(), "bracket", bracket.targs))
 			return p+2
 		return p+1
 
@@ -260,7 +289,7 @@ def fence(tokens):
 		bracket = tokens[p]
 		tokens[p] = MAction("NULL", {}, "CLOSE", [])
 		if bracket.targs:
-			tokens.insert(p, MObject("mo", bracket.attr.copy(), "bracket", bracket.targs))
+			tokens.insert(p, MObject("mo", bracket.attrib.copy(), "bracket", bracket.targs))
 			return p+2
 		return p+1
 
@@ -268,7 +297,7 @@ def fence(tokens):
 		bracket = tokens[p+1]
 		tokens[p] = MAction("NULL", {}, "OPEN", [])
 		if bracket[3]: # by index (expect targs, but anything goes)
-			tokens[p+1] = MObject("mo", bracket.attr.copy(), "bracket", bracket[3])
+			tokens[p+1] = MObject("mo", bracket.attrib.copy(), "bracket", bracket[3])
 			return p+2
 		else:
 			tokens.pop(p+1)
@@ -276,7 +305,8 @@ def fence(tokens):
 
 	def middle(p):
 		separator = tokens[p+1]
-		tokens[p+1] = MObject("mo", separator.attr.copy(), "sep", separator.targs)
+		 # by index (expect targs, but anything goes)
+		tokens[p+1] = MObject("mo", separator.attrib.copy(), "sep", separator[3])
 
 		tokens.pop(p)
 		return p+1
@@ -285,7 +315,7 @@ def fence(tokens):
 		bracket = tokens[p+1]
 		tokens[p+1] = MAction("NULL", {}, "CLOSE", [])
 		if bracket[3]: # by index (expect targs, but anything goes)
-			tokens[p] = MObject("mo", bracket.attr.copy(), "bracket", bracket[3])
+			tokens[p] = MObject("mo", bracket.attrib.copy(), "bracket", bracket[3])
 			return p+2
 		else:
 			tokens.pop(p)
@@ -325,9 +355,9 @@ def changes(tokens):
 
 	def addclass(token, class_name):
 		try:
-			token.attr["class"] += f" {class_name}"
+			token.attrib["class"] += f" {class_name}"
 		except KeyError:
-			token.attr["class"] = class_name
+			token.attrib["class"] = class_name
 
 	from functools import partial
 
@@ -445,6 +475,7 @@ def treeize(tokens):
 			"OPENTABLE" : table_open,
 		}.get(tokens[p].type, default)(p)
 
+	# FIXME MAIN->TREE?
 	tree = MGroup("math", {"displaystyle": "true"}, "MAIN", [])
 
 	p = 0
@@ -460,17 +491,27 @@ def classify(tree):
 	"""
 	def update(attribute, value, token):
 		try:
-			token.attr[attribute] += f" {value}"
+			token.attrib[attribute] += f" {value}"
 		except KeyError:
-			token.attr[attribute] = value
+			token.attrib[attribute] = value
+		
+	def update_elements(attribute, value, token_or_tree):
+		"""Updates elements or elements in rows"""
+		if token_or_tree.type == "TREE":
+			for token in token_or_tree.children:
+				update_elements(attribute, value, token)
+		if token_or_tree.type != "ATTRIBUTE": # FIXME: elif here?
+			update(attribute, value, token_or_tree)
 
 	def attribute(tree, p):
 		next_token = tree.children[p+1]
-		for attrib, value in tree.children[p].attr.items():
+		for attrib, value in tree.children[p].attrib.items():
 			if attrib in {"class", "id"}:
 				update(attrib, value, next_token)
+			elif attrib in {"mathvariant"}:
+				update_elements(attrib, value, next_token)
 			else: # Overwrite others
-				next_token.attr[attrib] = value
+				next_token.attrib[attrib] = value
 
 		tree.children.pop(p)
 		return p
@@ -485,7 +526,7 @@ def classify(tree):
 		while p < len(tree.children):
 			p = {
 				"ATTRIBUTE" : attribute,
-				"TREE"       : row,
+				"TREE"      : row,
 			}.get(tree.children[p].type, lambda*_: p+1)(tree, p)
 
 	attributize(tree)
@@ -497,7 +538,7 @@ def process(tree):
 	def grouper(tree, p):
 		action = tree.children[p]
 
-		grouping = MGroup(action.tag, action.attr, "TREE", [])
+		grouping = MGroup(action.tag, action.attrib, "TREE", [])
 		for i in action.targs:
 			# fetches the neighbours given by relative position in targs
 			grouping.children.append(tree.children[p+i])
@@ -518,7 +559,7 @@ def process(tree):
 	def accent(tree, p):
 		action = tree.children[p]
 
-		accenting = MGroup(action.tag, action.attr, "TREE", [])
+		accenting = MGroup(action.tag, action.attrib, "TREE", [])
 		accent = MObject("mo", {}, "accent", action.targs)
 		accented = tree.children.pop(p+1)
 
@@ -544,7 +585,7 @@ def process(tree):
 			pass
 
 		if i == 0: # Only sub (or under)
-			if "movablelimits" in tree.children[p-1].attr: #under
+			if "movablelimits" in tree.children[p-1].attrib: #under
 				undering = MGroup("munder", {}, "TREE", [])
 				undering.children.append(tree.children[p-1])
 				undering.children.append(tree.children[p+1])
@@ -570,7 +611,7 @@ def process(tree):
 
 		elif i == 2: #Possibly sub + sub or sup
 			if tree.children[p+i].type == "SUP":
-				if "movablelimits" in tree.children[p-1].attr: #under
+				if "movablelimits" in tree.children[p-1].attrib: #under
 					underovering = MGroup("munderover", {}, "TREE", [])
 					underovering.children.append(tree.children[p-1])
 					underovering.children.append(tree.children[p+1])
@@ -779,6 +820,7 @@ def process(tree):
 			p = {
 				"GROUPER"    : grouper,
 				"ACCENT"     : accent,
+				"CUSTOM"     : CUSTOM.custom, # macros
 
 				"SUB"        : sub,
 				"SUP"        : sup,
@@ -787,15 +829,13 @@ def process(tree):
 				"TREE"       : row,
 			}.get(tree.children[p].type, lambda tree, p: p+1)(tree, p)
 
-			#input("\n\n"+str(tree))
-
 	group(tree)
 
 def prefix(tree):
 	def op(tree, p):
 		if tree.children[p].text in {'+', '-'}:
 			if p == 0 or tree.children[p-1].type in {"operator", "relation", "bracket", "sep"}:
-				tree.children[p].attr.update(form="prefix")
+				tree.children[p].attrib.update(form="prefix")
 		return p+1
 
 	def subtree(tree, p):
@@ -869,6 +909,9 @@ def align(tree, counter):
 			if p >= len(tree.children): break
 			if tree.children[p].type == "TABLEDIV":
 				p += 1
+				# breaks for multiple consecutive &'s
+				if p >= len(tree.children): break
+
 		# For centering
 		matrix_cell = MGroup("mtd", {"style":"width:50%;padding:0;"}, "TREE",[])
 		matrix_row.children.append(matrix_cell)
@@ -889,7 +932,7 @@ def mmlise(parent, tree):
 	def to_mml(parent, tree):
 		for token in tree.children:
 			#print(f"mml: {token.tag}")
-			node = create_node(tag = token.tag, attrib = token.attr)
+			node = create_node(tag = token.tag, attrib = token.attrib)
 			parent.append(node)
 			if isinstance(token, MGroup): to_mml(node, token)
 			if isinstance(token, MObject): node.text = token.text
@@ -964,8 +1007,8 @@ class Math(Node):
 		token = re.compile('|'.join((END, EOF)), re.M).search(text)
 
 		# Eat Math block
-		self.text, inedible_text = text[:token.start()], text[token.end():]
-		self.text = self.text.strip().replace('\n\n', r'\\')
+		edible_text, inedible_text = text[:token.start()], text[token.end():]
+		edible_text = edible_text.strip().replace('\n\n', r'\\')
 
 		# Apply alignment (MathJax mode)
 		#if aligned: self.text = rf"\begin{{align*}}{self.text}\end{{align*}}"
@@ -974,17 +1017,15 @@ class Math(Node):
 		#if '\n' in self.text: self.attrib["display"] = "block"
 		#else: self.attrib["display"] = "inline"
 
-		self.parse()
+		return edible_text, inedible_text
 
-		return inedible_text
-
-	def parse(self):
+	def parse(self, text):
 
 		# Update ContextManager maps
 		NotImplemented
 
 		# Parse list -> tree
-		tokens = list(Tokenizer(self.text))
+		tokens = list(Tokenizer(text))
 		fence(tokens)
 		changes(tokens)
 		invisibles(tokens) # unfinished
@@ -1002,26 +1043,25 @@ class Math(Node):
 				align(tree, counter = True)
 			except KeyError:
 				pass
-
-		self.text = ""
+				
 		mmlise(self, tree)
 
 		def treeprinter(tree, level):
-			input(" "*(level-1) + tree.tag + str(tree.attr))
+			input(" "*(level-1) + tree.tag + str(tree.attrib))
 			for token in tree.children:
 				if isinstance(token, MGroup):
 					treeprinter(token, level+1)
 				if isinstance(token, MAction):
-					input(" "*level + token.tag + str(token.attr))
+					input(f"{' '*level}{token.tag}{token.attrib}")
 				if isinstance(token, MObject):
-					input(" "*level + token.tag + str(token.attr))
+					input(f"{' '*level}{token.tag}{token.attrib}")
 
 		#treeprinter(tree, 0)
 
 
 class UpdateContext:
 	def __init__(self, tag, attrib={}, text="", tail="", **extra):
-		self.attrib = attrib.copy()
+		self.attrib = attrib.copy() #
 		#super().__init__(tag, attrib.copy(), text, tail, **extra)
 
 	eat_arguments = eat_arguments
@@ -1032,6 +1072,7 @@ class UpdateContext:
 			text = self.eat_arguments(text)
 
 		try:
+			# a local package called contexts.py is searched for
 			import contexts
 
 			for key, val in self.attrib.items():
