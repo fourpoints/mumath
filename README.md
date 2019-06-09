@@ -6,7 +6,7 @@ Interpreter for a latex-like language, to be used in combination with Addup
   $$(numbering)
   1 + 2 + 3 = 6
   \\
-  \sum_{i=1}^9 = \series_{i=1, 2}^{8, 9} // simple macro support (with /series)
+  \sum_{i=1}^9 {x^i}\over 3 = \series_{i=1, 2}^{8, 9} {x_i}\over 3 // simple macro support (with /series)
   \\
   \int_0^1 000 000 d x = [x]_0^1 000 000 // Spaces and commas are supported between numerals
   \\
