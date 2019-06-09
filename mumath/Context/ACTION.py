@@ -73,8 +73,8 @@ ATTRIBUTES = {
     r"\frak"   : ("NONE", {"mathvariant": "fraktur"}, "ATTRIBUTE", [1]),
     r"\mathscr": ("NONE", {"mathvariant": "script"}, "ATTRIBUTE", [1]),
     r"\scr"    : ("NONE", {"mathvariant": "script"}, "ATTRIBUTE", [1]),
-    r"\mathcal": ("NONE", {"mathvariant": "script", "class": "calligraphic"}, "ATTRIBUTE", [1]), # same
-    r"\cal"    : ("NONE", {"mathvariant": "script", "class": "calligraphic"}, "ATTRIBUTE", [1]), # same
+    r"\mathcal": ("NONE", {"mathvariant": "script", "class": "calligraphic"}, "ATTRIBUTE", [1]),
+    r"\cal"    : ("NONE", {"mathvariant": "script", "class": "calligraphic"}, "ATTRIBUTE", [1]),
 
     r"\mathrm" : ("NONE", {"mathvariant": "normal"}, "ATTRIBUTE", [1]),
     r"\rm"     : ("NONE", {"mathvariant": "normal"}, "ATTRIBUTE", [1]),

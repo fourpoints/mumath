@@ -1,6 +1,7 @@
 from . import UNICODE as U
 from . import CONTEXT as C
 from . import ACTION as A
+from . import CUSTOM as Cu
 from .. Token import MObject, MGroup, MAction
 import html
 a = html.unescape("&sum;") #unused
@@ -77,6 +78,7 @@ ACTION_MAPS = [
     A.SEPARATORS,
     A.BRACKETS,
     A.ATTRIBUTES,
+    Cu.CUSTOM_ACTIONS,
 ]
 
 # Update ACTION_MAP

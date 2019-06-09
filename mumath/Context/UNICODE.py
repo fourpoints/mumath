@@ -249,11 +249,11 @@ ARROWS = {
 }
 
 MISC = {
-	r"\ldots": ("mo", {}, "operator", "&hellip;"),
-	r"\cdots": ("mo", {}, "operator", "&ctdot;"),
-	r"\vdots": ("mo", {}, "operator", "&vellip;"),
-	r"\ddots": ("mo", {}, "operator", "&dtdot;"),
-	r"\Ddots": ("mo", {}, "operator", "&utdot;"),
+	r"\ldots": ("mo", {}, "ellipsis", "&hellip;"),
+	r"\cdots": ("mo", {}, "ellipsis", "&ctdot;"),
+	r"\vdots": ("mo", {}, "ellipsis", "&vellip;"),
+	r"\ddots": ("mo", {}, "ellipsis", "&dtdot;"),
+	r"\Ddots": ("mo", {}, "ellipsis", "&utdot;"),
 	r"\aleph": ("mi", {}, "constant", "&alefsym;"),
 	r"\prime": ("mo", {}, "operator", "&prime;"),
 	r"\forall": ("mo", {"form": "prefix", "largeop": "true"}, "operator", "&forall;"),
