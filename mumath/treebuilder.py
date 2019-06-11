@@ -1088,7 +1088,10 @@ class UpdateContext:
 		except ImportError:
 			pass
 
-		return text
+		return "", text
+	
+	def parse(self, text):
+		pass
 
 class ClearContext:
 	def __init__(self, tag, attrib={}, text="", tail="", **extra):
@@ -1118,4 +1121,7 @@ class ClearContext:
 		except ImportError:
 			pass
 
-		return text
+		return "", text
+
+	def parse(self, text):
+		pass
