@@ -2,10 +2,10 @@ from .. import Token
 
 # It would be preferable to import nodes from .Context, in case of inconsistencies
 
-def replicate(tree, p, separator):
+def replicate(tree, p, separator, ellipsis):
     if tree.children[p+1].type == "SUB":
         lower = tree.children[p+2]
-        
+
         if tree.children[p+3].type == "SUP":
             upper = tree.children[p+4]
             template = tree.children[p+5]
@@ -36,7 +36,7 @@ def replicate(tree, p, separator):
 
         return groups
 
-    
+
     def search(node, sub, key):
         if isinstance(node, Token.MGroup):
             for i in range(len(node.children)):
@@ -47,10 +47,10 @@ def replicate(tree, p, separator):
                     node.children[i] = search(child, sub, key)
         elif isinstance(node, Token.MObject) and node.text == var.text:
             node = sub
-        
+
         return node
 
-    
+
 
     substitutes = []
     from copy import deepcopy
@@ -59,16 +59,16 @@ def replicate(tree, p, separator):
 
         for sub in grouper(lower.children[2:]):
             t = deepcopy(template)
-            
+
             substitutes.append(search(t, sub, var))
             substitutes.append(separator)
 
         if upper is not None:
-            substitutes.append(Token.MObject("mo", {}, "ellipsis", "&ctdot;"))
+            substitutes.append(ellipsis)
 
             for sub in grouper(upper.children):
                 t = deepcopy(template)
-                
+
                 substitutes.append(separator)
                 substitutes.append(search(t, sub, var))
         else:
@@ -76,26 +76,30 @@ def replicate(tree, p, separator):
     else:
         substitutes.append(tree.children[p])
 
-    return substitutes    
+    return substitutes
 
 def series(tree, p):
     # shared attrib-dict
-    PLUS = Token.MObject("mo", {"form": "infix"}, "operator", "+")
+    PLUS     = Token.MObject("mo", {"form": "infix"}, "operator", "+")
+    ELLIPSIS = Token.MObject("mo", {}, "ellipsis", "&ctdot;")
 
-    tree.children[p:p] = replicate(tree, p, PLUS)
+    # we insert a list of mml-nodes
+    tree.children[p:p] = replicate(tree, p, PLUS, ELLIPSIS)
 
     return p # doesn't group its elements, so we continue from where we left off
 
 def seq(tree, p):
     # shared attrib-dict
     COMMA = Token.MObject("mo", {"fence": "true"}, "sep", ",")
+    ELLIPSIS = Token.MObject("mo", {}, "ellipsis", "&hellip;")
 
-    sequence = replicate(tree, p, COMMA)
+    sequence = replicate(tree, p, COMMA, ELLIPSIS)
     lfence = Token.MObject("mo", {"fence": "true"}, "bracket", '(')
     rfence = Token.MObject("mo", {"fence": "true"}, "bracket", ')')
-    
-    
-    tree.children[p] = Token.MGroup("mrow", {}, "TREE", [lfence, *sequence, rfence])
+
+    # we insert a mml-node
+    tree.children.insert(p, Token.MGroup("mrow", {}, "TREE", [lfence, *sequence, rfence]))
+
     return p
 
 
@@ -108,7 +112,7 @@ def wrap(tree, p, lwrap, rwrap = None):
         GROUP = Token.MGroup("mrow", value.attrib.copy(), "TREE", [lwrap, *value.children, rwrap])
     else:
         GROUP = Token.MGroup("mrow", {}, "TREE", [lwrap, value, rwrap])
-    
+
     tree.children[p+1] = GROUP
     del tree.children[p]
 
@@ -117,7 +121,7 @@ def abs(tree, p):
     BAR = Token.MObject("mo", {"fence": "true"}, "bracket", '|')
 
     wrap(tree, p, BAR)
-    
+
     return p # doesn't group its elements, so we continue from where we left off
 
 
@@ -125,7 +129,7 @@ def norm(tree, p):
     NORM = Token.MObject("mo", {"fence": "true"}, "bracket", '&Vert;')
 
     wrap(tree, p, NORM)
-    
+
     return p # doesn't group its elements, so we continue from where we left off
 
 
@@ -134,7 +138,7 @@ def inner(tree, p):
     rbrace = Token.MObject("mo", {"fence": "true"}, "bracket", '&rangle;')
 
     wrap(tree, p, lbrace, rbrace)
-    
+
     return p # doesn't group its elements, so we continue from where we left off
 
 
