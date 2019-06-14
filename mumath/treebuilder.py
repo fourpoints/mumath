@@ -494,7 +494,7 @@ def classify(tree):
 			token.attrib[attribute] += f" {value}"
 		except KeyError:
 			token.attrib[attribute] = value
-		
+
 	def update_elements(attribute, value, token_or_tree):
 		"""Updates elements or elements in rows"""
 		if token_or_tree.type == "TREE":
@@ -1008,14 +1008,9 @@ class Math(Node):
 
 		# Eat Math block
 		edible_text, inedible_text = text[:token.start()], text[token.end():]
+
+		# Undocumented feature (double newline is \\)
 		edible_text = edible_text.strip().replace('\n\n', r'\\')
-
-		# Apply alignment (MathJax mode)
-		#if aligned: self.text = rf"\begin{{align*}}{self.text}\end{{align*}}"
-
-		# Check if multiline/block or inline math
-		#if '\n' in self.text: self.attrib["display"] = "block"
-		#else: self.attrib["display"] = "inline"
 
 		return edible_text, inedible_text
 
@@ -1034,16 +1029,19 @@ class Math(Node):
 		process(tree)
 		prefix(tree) # Correct + and -
 
-		try:
-			self.attrib.pop("align")
-			align(tree, counter = None)
-		except KeyError:
-			try:
-				self.attrib.pop("numbering")
-				align(tree, counter = True)
-			except KeyError:
-				pass
-				
+		# Check if block element or inline element
+		aligned  =     "align" in self.attrib
+		numbered = "numbering" in self.attrib
+
+		# Remove the attributes
+		self.attrib.pop("align", None); self.attrib.pop("numbering", None)
+
+		if aligned or numbered:
+			align(tree, counter = numbered)
+			self.attrib["display"] = "block"
+		else:
+			self.attrib["display"] = "inline"
+
 		mmlise(self, tree)
 
 		def treeprinter(tree, level):
@@ -1089,7 +1087,7 @@ class UpdateContext:
 			pass
 
 		return "", text
-	
+
 	def parse(self, text):
 		pass
 
