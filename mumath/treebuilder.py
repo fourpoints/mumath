@@ -854,15 +854,19 @@ def prefix(tree):
 
 	itertree(tree)
 
-GLOBAL_COUNTER = 1
+class COUNTER:
+	num = 1
+	@classmethod
+	def reset(cls):
+		cls.num = 1
+
 def align(tree, counter):
 	"""Aligns the tree in a table
 	"""
 	matrix_table = MGroup("mtable", {"displaystyle": "true"}, "TREE", [])
 
 	if counter is not None:
-		global GLOBAL_COUNTER
-		counter = GLOBAL_COUNTER
+		counter = COUNTER.num
 
 	p = 0
 	while p < len(tree.children):
@@ -919,7 +923,8 @@ def align(tree, counter):
 
 	del tree.children[:]
 	if counter is not None:
-		GLOBAL_COUNTER = counter
+		COUNTER.num = counter
+
 	tree.children.append(matrix_table)
 
 	return tree
