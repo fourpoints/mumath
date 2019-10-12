@@ -1,8 +1,10 @@
 # mumath
 Compiler from latex-like language to mathml. Best used in combination with [Addup](https://github.com/fourpoints/addup).
 
+Not guaranteed to be 100 % mathml compliant.
 
-### Simple equation support
+
+### Simple equations
 
 mumath
 ```
@@ -22,70 +24,9 @@ mathml
 ---
 
 
-### basic macro support
+### Spaces and commas are supported between numerals
 
-mumath
-```
-\sum_{i=1}^9 {x^i}\over 3 = \series_{i=1, 2}^{8, 9} {x_i}\over 3
-```
-mathml
-```xml
-<munderover>
-  <mo form="prefix" largeop="true" movablelimits="true">&sum;</mo>
-  <mrow>
-    <mi mathvariant="italic">i</mi>
-    <mo>=</mo>
-    <mn>1</mn>
-  </mrow>
-  <mn>9</mn>
-</munderover>
-<mfrac>
-  <mrow>
-    <msup>
-      <mi>x</mi>
-      <mi mathvariant="italic">i</mi>
-    </msup>
-  </mrow>
-  <mn>3</mn>
-</mfrac>
-<mo>=</mo>
-<mrow>
-  <msub>
-    <mi>x</mi>
-    <mn>1</mn>
-  </msub>
-</mrow>
-<mo form="infix">+</mo>
-<mrow>
-  <msub>
-    <mi>x</mi>
-    <mn>2</mn>
-  </msub>
-</mrow>
-<mo form="infix">+</mo>
-<mo>&ctdot;</mo>
-<mo form="infix">+</mo>
-<mrow>
-  <msub>
-    <mi>x</mi>
-    <mn>8</mn>
-  </msub>
-</mrow>
-<mo form="infix">+</mo>
-<mfrac>
-  <mrow>
-    <msub>
-      <mi>x</mi>
-      <mn>9</mn>
-    </msub>
-  </mrow>
-  <mn>3</mn>
-</mfrac>
-```
-
----
-
-### Spaces and commas are supported between numerals. Note that this means that `(1,0)` is a 1-tuple, but `(1, 0)` is a two-tuple.
+Note that this means that `(1,0)` is a 1-tuple, but `(1, 0)` is a two-tuple.
 
 mumath
 ```
@@ -114,7 +55,7 @@ mathml
 
 ---
 
-### matrix support
+### Matrix support
 
 mumath
 ```
@@ -148,7 +89,9 @@ mathml
 
 ---
 
-### Supports 0r for roman numerals, in addition to 0x, 0o and 0b for hexadecimal, octal and binary
+### Supports 0r for roman numerals
+
+In addition to 0x, 0o and 0b for hexadecimal, octal and binary
 
 mumath
 ```
@@ -182,7 +125,9 @@ mathml
 
 ---
 
-### Supports double underscore for \undersetting, similar with ^^ for oversetting
+### Supports double underscore for \undersetting
+
+Similarly `^^` for oversetting
 
 mumath
 ```
@@ -257,6 +202,69 @@ mathml
 
 ---
 
+### Basic macro support
+
+mumath
+```
+\sum_{i=1}^9 {x^i}\over 3 = \series_{i=1, 2}^{8, 9} {x_i}\over 3
+```
+mathml
+```xml
+<munderover>
+  <mo form="prefix" largeop="true" movablelimits="true">&sum;</mo>
+  <mrow>
+    <mi mathvariant="italic">i</mi>
+    <mo>=</mo>
+    <mn>1</mn>
+  </mrow>
+  <mn>9</mn>
+</munderover>
+<mfrac>
+  <mrow>
+    <msup>
+      <mi>x</mi>
+      <mi mathvariant="italic">i</mi>
+    </msup>
+  </mrow>
+  <mn>3</mn>
+</mfrac>
+<mo>=</mo>
+<mrow>
+  <msub>
+    <mi>x</mi>
+    <mn>1</mn>
+  </msub>
+</mrow>
+<mo form="infix">+</mo>
+<mrow>
+  <msub>
+    <mi>x</mi>
+    <mn>2</mn>
+  </msub>
+</mrow>
+<mo form="infix">+</mo>
+<mo>&ctdot;</mo>
+<mo form="infix">+</mo>
+<mrow>
+  <msub>
+    <mi>x</mi>
+    <mn>8</mn>
+  </msub>
+</mrow>
+<mo form="infix">+</mo>
+<mfrac>
+  <mrow>
+    <msub>
+      <mi>x</mi>
+      <mn>9</mn>
+    </msub>
+  </mrow>
+  <mn>3</mn>
+</mfrac>
+```
+
+---
+
 ### In conjunction with Addup
 
 addup+mumath
@@ -313,6 +321,7 @@ html+mathml
         <mtd style="width:50%;padding:0;">
         </mtd>
       </mtr>
-    </mtable></math>
+    </mtable>
+  </math>
 </div>
 ```
