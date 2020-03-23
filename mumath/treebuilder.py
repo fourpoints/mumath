@@ -865,8 +865,9 @@ def align(tree, counter):
 	"""
 	matrix_table = MGroup("mtable", {"displaystyle": "true"}, "TREE", [])
 
-	if counter is not None:
-		counter = COUNTER.num
+	# redefine counter variable
+	# BUG isinstance(False, int) == True
+	counter = COUNTER.num if counter else None
 
 	p = 0
 	while p < len(tree.children):
@@ -1034,9 +1035,11 @@ class Math(Node):
 		process(tree)
 		prefix(tree) # Correct + and -
 
+
 		# Check if block element or inline element
 		aligned  =     "align" in self.attrib
 		numbered = "numbering" in self.attrib
+
 
 		# Remove the attributes
 		self.attrib.pop("align", None); self.attrib.pop("numbering", None)
@@ -1044,8 +1047,10 @@ class Math(Node):
 		if aligned or numbered:
 			align(tree, counter = numbered)
 			self.attrib["display"] = "block"
+			self.attrib["class"] = "math math--block"
 		else:
 			self.attrib["display"] = "inline"
+			self.attrib["class"] = "math math--inline"
 
 		mmlise(self, tree)
 
