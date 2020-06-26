@@ -110,12 +110,13 @@ def Tokenizer(text):
 	def open_(p):
 		bracket = text[p]
 		if bracket == '{': bracket = ''
-		return MAction("mo", {"fence": "true"}, "OPEN", bracket), p + 1
+		# 16px(?) * 11/24 = 7.333...px
+		return MAction("mo", {"stretchy": "false"}, "OPEN", bracket), p + 1
 
 	def close(p):
 		bracket = text[p]
 		if bracket == '}': bracket = ''
-		return MAction("mo", {"fence": "true"}, "CLOSE", bracket), p + 1
+		return MAction("mo", {"stretchy": "false"}, "CLOSE", bracket), p + 1
 
 	def subb(p):
 		if text[p+1] == '_':
@@ -244,7 +245,7 @@ def Tokenizer(text):
 		"close"    : dict.fromkeys(iter("}])"), close),
 		"supp"     : dict.fromkeys(iter("^"), supp),
 		"subb"     : dict.fromkeys(iter("_"), subb),
-		"sep"      : dict.fromkeys(iter(",.|:"), sep),
+		"sep"      : dict.fromkeys(iter(",.|:;"), sep),
 		"eol"      : dict.fromkeys(iter("\n"), eol),
 		#comment  : dict.fromkeys(iter("%"), comme), #ironic that the comment is
 		"text"     : dict.fromkeys(iter("$"), text_),
@@ -298,6 +299,7 @@ def fence(tokens):
 		tokens[p] = MAction("NULL", {}, "OPEN", [])
 		if bracket[3]: # by index (expect targs, but anything goes)
 			tokens[p+1] = MObject("mo", bracket.attrib.copy(), "bracket", bracket[3])
+			tokens[p+1].attrib["stretchy"] = "true"
 			return p+2
 		else:
 			tokens.pop(p+1)
@@ -316,6 +318,7 @@ def fence(tokens):
 		tokens[p+1] = MAction("NULL", {}, "CLOSE", [])
 		if bracket[3]: # by index (expect targs, but anything goes)
 			tokens[p] = MObject("mo", bracket.attrib.copy(), "bracket", bracket[3])
+			tokens[p].attrib["stretchy"] = "true"
 			return p+2
 		else:
 			tokens.pop(p)
