@@ -43,6 +43,8 @@ UNICODE_MAPS = [
     U.CALCULUS,
     U.CHEMISTRY,
     U.PHYSICS,
+
+    C.STATISTICS,
 ]
 
 # Update UNICODE_MAP
@@ -58,6 +60,8 @@ SYMBOL_MAP = {
     r'\\': (MAction, ("NONE", {}, "NEWLINE", "")),
     '\{' : (MAction, ("mo", {"fence": "true"}, "OPEN", "{")),
     '\}' : (MAction, ("mo", {"fence": "true"}, "CLOSE", "}")),
+
+    "\;" : (MObject, ("mspace", {"width": "3pt"}, "hardspace", "")),
 
     '\.' : (MObject, ("mo", {}, "bracket", "")), #???
     '\|' : (MObject, ("mo", {}, "bracket", "&Vert;")),

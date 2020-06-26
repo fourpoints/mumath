@@ -10,6 +10,15 @@ COMMON = {
     "k" : ("mi", {"mathvariant": "italic"}, "constant", "k"),
 }
 
+STATISTICS = {
+	r"\done"   : ("mi", {}, "constant", "⚀"),
+	r"\dtwo"   : ("mi", {}, "constant", "⚁"),
+	r"\dthree" : ("mi", {}, "constant", "⚂"),
+	r"\dfour"  : ("mi", {}, "constant", "⚃"),
+	r"\dfive"  : ("mi", {}, "constant", "⚄"),
+	r"\dsix"   : ("mi", {}, "constant", "⚅"),
+}
+
 CHEMISTRY = {
 	r"H"  : ("mi", {"mathvariant": "normal"}, "chem-symbol", "H"), #Hydrogen
 	r"D"  : ("mi", {"mathvariant": "normal"}, "chem-symbol", "D"), #Deuterium
