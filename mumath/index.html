@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <title>μMath</title>
+    <style>
+        html { font-family: sans-serif; }
+        .text-box {
+            font-family: monospace;
+            width: 30rem;
+            height: 10rem;
+        }
+        /*/ MathJax/MathML /*/
+        .MJXc-display, .MathJax_Display, div.MathJax_MathML {
+            margin: .5em auto!important;
+            border-left: 3px solid #ededed!important;
+            padding: .5em 0!important;
+            border-radius: 0 4px 4px 0;
+            background-color: #fff;
+        }
+        .math {
+            white-space: nowrap;
+            font-family: "Latin Modern Math", MathJax_Main, Serif;
+        }
+        [mathvariant="script"].calligraphic {
+            font-family: "XITS Math"; font-feature-settings: "ss01";
+        }
+        [mathvariant="script"] {
+            font-family: "XITS Math"; font-feature-settings: "ss02";
+        }
+    </style>
+<body>
+    <h1>μMath</h1>
+    <h2>Input</h2>
+    <form method="post">
+        <textarea name="mumath" class="text-box" id="input">$INPUT</textarea>
+        <button type="submit">Convert</button>
+    </form>
+    <h2>Output</h2>
+    <div id="output">$OUTPUT</div>
