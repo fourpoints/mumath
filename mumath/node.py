@@ -9,25 +9,47 @@ class Tree(ET.ElementTree):
     pass
 
 
-class Node(ET.Element):
+class Element(ET.Element):
+    def _to_string(self):
+        return f"<{self._name()} />"
+
+    def _name(self):
+        name = [self.tag]
+        for key, value in self.attrib.items():
+            name.append(f'{key}="{value}"')
+        return " ".join(name)
+
+    def __repr__(self):
+        return self._to_string()
+
+
+class Node(Element):
     def __init__(self, tag, text=None, attrib={}, **extra):
         super().__init__(tag, attrib, **extra)
         self.text = text
 
+    def _to_string(self):
+        return f"<{self._name()}>{self.text}</{self.tag}>"
 
-class Collection(ET.Element):
+
+
+class Collection(Element):
     def __init__(self, tag, children=[], attrib={}, **extra):
         super().__init__(tag, attrib, **extra)
         self.extend(children)
 
+    def _to_string(self):
+        return f"<{self._name()} with {len(self)} children>"
 
-class Empty(ET.Element):
+
+class Empty(Element):
     # For elements like <mprescripts>, <none>, <mspace>
     pass
 
 
-class Comment(ET.Element):
-    pass
+class Comment(Element):
+    def _to_string(self):
+        return f"<!-- {self.text} -->"
 
 
 top_level = [

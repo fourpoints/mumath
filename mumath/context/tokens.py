@@ -1,4 +1,5 @@
 # tokens and special symbols for lexer
+# based on builtins.token
 
 IDENTIFIER = 1
 NUMBER = 2
@@ -20,14 +21,14 @@ SUP = 16
 OPEN = 17
 CLOSE = 18
 
-OPENNEXT = 19
-CLOSENEXT = 20
-OPENPREV = 21
-CLOSEPREV = 22
+OPEN_NEXT = 19
+SHUT_NEXT = 20
+OPEN_PREV = 21
+SHUT_PREV = 22
 
-DETERMINANT = 23
+FUNCTION = 23
 MATRIX = 24
-ENVIRONMENT = 25
+BEGIN = 25
 END = 26
 OVER = 27
 CHOOSE = 28
@@ -38,7 +39,7 @@ NORM = 32
 SQRT = 33
 VARIANT = 34
 ENCLOSE = 35
-CLASS = 36
+CLASS_ = 36  # note _
 NO_NUMBER = 37
 
 SOFT_SPACE = 38
@@ -52,4 +53,9 @@ BINOM = 45
 ROOT = 46
 DISPLAYSTYLE = 47
 PAD = 48
-HUT = 49
+SHOE = 49
+ENVIRONMENT = 50
+
+tok_name = {value: name
+            for name, value in globals().items()
+            if isinstance(value, int) and not name.startswith('_')}

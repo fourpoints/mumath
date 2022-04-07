@@ -1,24 +1,118 @@
 from context.tokens import *
 import context.dictionary as ctx
 import re
+from collections import namedtuple
 
 
+# For diffs
+flags = {
+    OPEN_NEXT: (+1).__or__,
+    SHUT_NEXT: (~1).__and__,
+    OPEN_PREV: (+2).__or__,
+    SHUT_PREV: (~2).__and__,
+}
 
 
-_keyword = r"\\[^\W\d_]+"  # matches words without _ and numbers
+ttypes = {
+    # basic syntactical components
+    KEYWORD: "keyword",
+    TEXT_SEP: "text_separator",
+    SUBB: "subb",
+    SUB: "sub",
+    SUPP: "supp",
+    SUP: "sup",
+    OPEN_NEXT: "open_next",
+    SHUT_NEXT: "shut_next",
+    OPEN_PREV: "open_prev",
+    SHUT_PREV: "shut_prev",
+    SOFT_SPACE: "soft_space",
+    STRING: "string",
+    COMMENT: "comment",
+
+    # basic functional components
+    MATRIX: "matrix",
+    BEGIN: "begin",
+    END: "end",
+    ENVIRONMENT: "environments",
+    OVER: "over",
+    CHOOSE: "choose",
+    SERIES: "series",  # macro
+    SQRT: "sqrt",
+    CLASS_: "class_",
+    TEXT: "text",
+    NO_NUMBER: "no_number",
+    PRESCRIPT: "prescript",
+    UNDERSET: "underset",
+    OVERSET: "overset",
+    FRAC: "frac",
+    BINOM: "binom",
+    ROOT: "root",
+    DISPLAYSTYLE: "displaystyle",
+    PAD: "pad",
+
+    # general components
+    RELATION: "relations",
+    NUMBER: "numbers",
+    IDENTIFIER: "identifiers",
+    OPERATOR: "operators",
+    BINOP: "binary_operators",
+    FUNCTION: "functions",
+    HAT: "hats",
+    SHOE: "shoes",
+    NORM: "brackets",
+    OPEN: "open_brackets",
+    CLOSE: "close_brackets",
+    COL_SEP: "col_separators",
+    ROW_SEP: "row_separators",
+    VARIANT: "fonts",
+    ENCLOSE: "enclosures",
+    SPACE: "spaces",
+}
 
 
-def _tokens(symbols, ttype):
-    for symbol in symbols:
+class Glyph(namedtuple("Glyph", ttypes.values())):
+    @classmethod
+    def from_context(cls, ctx):
+        return cls._make(getattr(ctx, name).copy() for name in cls._fields)
+
+    def _ttype_name(self):
+        # ttype_name is aligned with Glyph
+        return {ttype: key for ttype, key in zip(ttypes, self)}
+
+    @property
+    def tokens(self):
+        return dict(_tokens(groups))
+
+    @property
+    def keywords(self):
+        return dict(_keywords(groups))
+
+
+# Match words without _ and numbers
+_keyword = r"\\[^\W\d_]+$"
+_word = r"[^\W\d_]+"
+
+
+def group_symbols(groups):
+    for ttype, symbols in groups.items():
+        for symbol in symbols:
+            yield (ttype, symbol)
+
+
+def _tokens(groups):
+    for ttype, symbol in group_symbols(groups):
         if not re.match(_keyword, symbol):
-            yield symbol, ttype
+            yield (symbol, ttype)
+
+    # Must come last so it doesn't override custom words
+    # Maybe separate type?
+    yield (_word, IDENTIFIER)
 
 
-def _keywords(symbols, ttype):
-    for symbol in symbols:
+def _keywords(groups):
+    for ttype, symbol in group_symbols(groups):
         if re.match(_keyword, symbol):
-            yield symbol, ttype
-
+            yield (symbol, ttype)
 
 
 def _normalize(attrib):
@@ -30,132 +124,40 @@ def _normalize(attrib):
         raise TypeError
 
 
-def _group(groups, ttype):
-    for group, group_ttype in groups:
-        if group_ttype == ttype:
-            yield group
+def normalize(dict_):
+    return {key: _normalize(value) for key, value in dict_.items()}
 
 
-def _merge(dicts):
+def merge(dicts):
     return {key: value for d in dicts for key, value in d.items()}
 
 
-def merge(dicts, normalize=False):
-    merged = _merge(dicts)
-    if normalize:
-        merged = {key: _normalize(value) for key, value in merged.items()}
-    return merged
+# groups = {key: merge(dicts) for key, dicts in groups.items()}
+
+_glyph = Glyph.from_context(ctx)
+_glyph.identifiers.update(ctx.custom_identifiers)
+_glyph.identifiers.update(ctx.sets)
+_glyph.identifiers.update(ctx.greeks)
+_glyph.functions.update(ctx.custom_functions)
+
+groups = _glyph._ttype_name()
 
 
-groups = [
-    (ctx.numbers, NUMBER),
-    (ctx.custom, IDENTIFIER),
-    (ctx.operators, OPERATOR),
-    (ctx.arrows, OPERATOR),
-    (ctx.binary_operators, OPERATOR),
-    (ctx.identifiers, IDENTIFIER),
-    (ctx.relations, RELATION),
-    (ctx.not_relations, RELATION),
-    (ctx.large_operators, OPERATOR),
-    (ctx.functions, OPERATOR),
-    (ctx.hats, HAT),
-    (ctx.huts, HUT),
-    (ctx.brackets, NORM),
-    (ctx.open_brackets, OPEN),
-    (ctx.close_brackets, CLOSE),
-    (ctx.col_separators, COL_SEP),
-    (ctx.row_separators, ROW_SEP),
-    (ctx.fonts, VARIANT),
-    (ctx.enclosures, ENCLOSE),
-    (ctx.sets, IDENTIFIER),
-    (ctx.spaces, SPACE),
-    (ctx.greeks, IDENTIFIER),
-    (ctx.chemistry, IDENTIFIER),
-    (ctx.physics, IDENTIFIER),
-]
+tokens = dict(_tokens(groups))
+keywords = dict(_keywords(groups))
 
+operators = normalize(groups[OPERATOR])
+binary_operators = normalize(groups[BINOP])
+relations = normalize(groups[RELATION])
+functions = normalize(groups[FUNCTION])
+identifiers = normalize(groups[IDENTIFIER])
+brackets = normalize(groups[NORM])
+hats = groups[HAT]
+shoes = groups[SHOE]
+environments = groups[ENVIRONMENT]
+fonts = groups[VARIANT]
+enclosures = groups[ENCLOSE]
+open_brackets = groups[OPEN]
+close_brackets = groups[CLOSE]
+col_separators = groups[COL_SEP]
 
-tokens = {
-    _keyword: KEYWORD,
-    r"\$": TEXT_SEP,
-    r"\_\_": SUBB,
-    r"\_": SUB,
-    r"\^\^": SUPP,
-    r"\^": SUP,
-    r"\\\[" : OPENNEXT,
-    r"\\\)" : CLOSENEXT,
-    r"\\\(" : OPENPREV,
-    r"\\\]" : CLOSEPREV,
-    r"\s+": SOFT_SPACE,
-
-    r"\d+": NUMBER,
-    r"\.": DOT,
-
-    r'".*?"': STRING,
-    r'\%.*$': COMMENT,
-
-    r"\\\&": OPERATOR,
-    r"\\\%": OPERATOR,
-    r"\\\$": OPERATOR,
-    r"\\\#": OPERATOR,
-    r"\\\_": OPERATOR,
-    r"\\\\": OPERATOR,
-    r"\\\.": OPERATOR,
-    r"\\\|": OPERATOR,
-}
-
-
-for group, ttype in groups:
-    tokens.update(_tokens(group, ttype))
-
-
-# Must come last so it doesn't override custom words
-tokens[r"[^\W\d_]+"] = IDENTIFIER  # matches words without _ and numbers
-
-
-keywords = {
-    # r"\infty": IDENTIFIER,
-    # r"\reals": IDENTIFIER,
-    r"\det": DETERMINANT,
-    r"\matrix": MATRIX,
-    r"\cases": MATRIX,
-    r"\begin": ENVIRONMENT,
-    r"\end": END,
-    r"\over": OVER,
-    r"\bover": OVER,
-    r"\choose": CHOOSE,
-    r"\sum": LARGEOP,
-    r"\series": SERIES,  # macro
-    r"\int": LARGEOP,
-    r"\hat": HAT,
-    r"\norm": NORM,
-    r"\sqrt": SQRT,
-    r"\class": CLASS,
-    r"\text": TEXT,
-    r"\nonumber": NO_NUMBER,
-    r"\notag": NO_NUMBER,
-    r"\prescript": PRESCRIPT,
-    r"\underset": UNDERSET,
-    r"\overset": OVERSET,
-    r"\frac": FRAC,
-    r"\binom": BINOM,
-    r"\root": ROOT,
-    r"\displaystyle": DISPLAYSTYLE,
-    r"\pad": PAD,
-}
-
-for group, ttype in groups:
-    keywords.update(_keywords(group, ttype))
-
-
-operators = merge(_group(groups, OPERATOR), normalize=True)
-identifiers = merge(_group(groups, IDENTIFIER), normalize=True)
-hats = merge(_group(groups, HAT))
-huts = merge(_group(groups, HUT))
-environments = ctx.environments  # for LATEX compatibility
-brackets = merge(_group(groups, NORM), normalize=True)
-fonts = merge(_group(groups, VARIANT))
-enclosures = merge(_group(groups, ENCLOSE))
-open_brackets = merge(_group(groups, OPEN))
-close_brackets = merge(_group(groups, CLOSE))
-col_separators = merge(_group(groups, COL_SEP))

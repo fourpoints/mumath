@@ -1,22 +1,114 @@
 attrib = dict
+def atomic(*args): return dict.fromkeys(args)
 
 # group = lambda l: re.match(r'.*(r"\\.*?").*(&.*?;|\w+)"\)', l).groups()
 # fmt = lambda t: f'    {t[0]}: "{unescape(t[1])}",  # {t[1]}'
 # lambda ls: "\n".join(map(fmt, map(group, filter(None, str.splitlines(ls)))))
 
-numbers = {
-    r"0x\d+": None,
-    r"0o\d+": None,
-    r"0b\d+": None,
+
+keyword = atomic(r"\\[^\W\d_]+")
+text_separator = atomic(r"\$")
+subb = atomic(r"\_\_")
+sub = atomic(r"\_")
+supp = atomic(r"\^\^")
+sup = atomic(r"\^")
+open_next = atomic(r"\\\[")
+shut_next = atomic(r"\\\)")
+open_prev = atomic(r"\\\(")
+shut_prev = atomic(r"\\\]")
+soft_space = atomic(r"\s+")
+string = atomic(r'".*?"')
+comment = atomic(r'\%.*$')
+defaults = {
+    r"\\\&": "&",
+    r"\\\%": "%",
+    r"\\\$": "$",
+    r"\\\#": "#",
+    r"\\\_": "_",
+    r"\\\\": "\\",
+    r"\\\.": ".",
+    r"\\\|": "|",
 }
 
-custom = {
+
+matrix = atomic(r"\matrix", r"\cases")
+begin = atomic(r"\begin")
+end = atomic(r"\end")
+over = atomic(r"\over", r"\bover")
+choose = atomic(r"\choose")
+series = atomic(r"\series")  # macro
+sqrt = atomic(r"\sqrt")
+class_ = atomic(r"\class")
+text = atomic(r"\text")
+no_number = atomic(r"\nonumber", r"\notag")
+prescript = atomic(r"\prescript")
+underset = atomic(r"\underset")
+overset = atomic(r"\overset")
+frac = atomic(r"\frac")
+binom = atomic(r"\binom")
+root = atomic(r"\root")
+displaystyle = atomic(r"\displaystyle")
+pad = atomic(r"\pad")
+
+
+numbers = atomic(
+    r"0[xX](?:_?[0-9a-fA-F])+",
+    r"0[bB](?:_?[01])+",
+    r"0[oO](?:_?[0-7])+",
+    # decimals of the form .1 or 1. are not permitted.
+    r"[0-9](?:_?[0-9])*[\.,](?:[0-9](?:_?[0-9])*)",
+    r"(?:0(?:_?0)*|[1-9](?:_?[0-9])*)",
+    # roman numerals
+    r"(?=[MDCLXVI])M*(?:C[MD]|D?C{0,3})(?:X[CL]|L?X{0,3})(?:I[XV]|V?I{0,3})",
+)
+
+
+custom_identifiers = {
     r"a": "a",
     r"b": "b",
     r"c": "c",
     r"x": "x",
     r"y": "y",
     r"z": "z",
+}
+
+
+custom_functions = {
+    r"f": "f",
+    r"g": "g",
+    r"h": "h",
+}
+
+
+identifiers = {
+    r"\?": "?",
+    r"\ell": ("ℓ,{}"),  # &ell;
+    # r"He": ("He", attrib(mathvariant="normal")),
+    # r"Pb": ("Pb", attrib(mathvariant="normal")),
+    # r"Tl": ("Tl", attrib(mathvariant="normal")),
+    # r"H": ("H", attrib(mathvariant="normal")),
+    # r"N": ("N", attrib(mathvariant="normal")),
+    r"\infty": ("∞", {}),  # &infin;
+    r"\aleph": "ℵ",  # &alefsym;
+    r"\imath": ("ı", attrib(mathvariant="italic")),  # &imath;
+    r"\jmath": ("ȷ", attrib(mathvariant="italic")),  # &jmath;
+
+    r"\top": "⊤",  # &top;
+    r"\bot": "⊥",  # &bot;
+    r"\Box": "□",  # &#x25a1;
+    # r"\reals": ("&reals;", attrib(mathvariant="double-struck"))
+
+    r"\.{3}": "…",
+    r"\ldots": "…",  # &hellip;
+    r"\cdots": "⋯",  # &ctdot;
+    r"\vdots": "⋮",  # &vellip;
+    r"\ddots": "⋱",  # &dtdot;
+    r"\Ddots": "⋰",  # &utdot;
+
+    r"\prime": "′",  # &prime;
+    r"\qed": "□",  # &#x25a1;
+
+    r"\angle": "∠",  # &angle;
 }
 
 
@@ -39,12 +131,42 @@ operators = {
     r"\*": ("&InvisibleTimes;", attrib()),  # &it;
     r"\¤": ("&ApplyFunction;", attrib()),  # &af;
     r"!": ("!", attrib(form="postfix", lspace="0")),
+
+
+    # large operators
+    r"\sum": ("∑", attrib(form="prefix", largeop="true", movablelimits="true")),  # &sum;
+    r"\prod": ("∏", attrib(form="prefix", largeop="true", movablelimits="true")),  # &prod;
+    r"\coprod": ("∐", attrib(form="prefix", largeop="true", movablelimits="true")),  # &coprod;
+    r"\int": ("∫", attrib(form="prefix", largeop="true")),  # &#x222B;
+    r"\iint": ("∬", attrib(form="prefix", largeop="true")),  # &#x222C;
+    r"\iiint": ("∭", attrib(form="prefix", largeop="true")),  # &#x222D;
+    r"\oint": ("∲", attrib(form="prefix", largeop="true")),  # &#x2232;
+    r"\bigcap": ("⋂", attrib(form="prefix", largeop="true", movablelimits="true")),  # &bigcap;
+    r"\intersection": ("⋂", attrib(form="prefix", largeop="true", movablelimits="true")),  # &Intersection;
+    r"\bigcup": ("⋃", attrib(form="prefix", largeop="true", movablelimits="true")),  # &bigcup;
+    r"\union": ("⋃", attrib(form="prefix", largeop="true", movablelimits="true")),  # &Union;
+    r"\bigsqcup": ("⨆", attrib(form="prefix", largeop="true", movablelimits="true")), # &bigsqcup;
+    r"\bigvee": ("⋁", attrib(form="infix", largeop="true")), # &Vee;
+    r"\bigwedge": ("⋀", attrib(form="infix", largeop="true")), # &Wedge;
+    r"\bigodot": ("⨀", attrib(form="prefix", largeop="true", movablelimits="true")),  # &bigodot;
+    r"\bigotimes": ("⨂", attrib(form="prefix", largeop="true", movablelimits="true")),  # &bigotimes;
+    r"\bigoplus": ("⨁", attrib(form="prefix", largeop="true", movablelimits="true")),  # &bigoplus;
+    r"\biguplus": ("⨄", attrib(form="prefix", largeop="true", movablelimits="true")),  # &biguplus;
+
+
+    r"\forall": ("∀", attrib(form="prefix", largeop="true")),  # &forall;
+    r"\exists": ("∃", attrib(form="prefix", largeop="true")),  # &exist;
 }
+
+operators.update(defaults)
 
 
 binary_operators = {
     r"\+": "+",
     r"\-": "-",
+    r"\*": "*",
+    r"\/": "/",
+    r"\.": ".",
 
     r"\times": "×",  # &times;
     r"\div": "÷",  # &div;
@@ -91,45 +213,15 @@ binary_operators = {
     r"\frown": "⌢",  # &frown;
 }
 
-
-identifiers = {
-    r"\?": "?",
-    r"\ell": ("ℓ,{}"),  # &ell;
-    # r"He": ("He", attrib(mathvariant="normal")),
-    # r"Pb": ("Pb", attrib(mathvariant="normal")),
-    # r"Tl": ("Tl", attrib(mathvariant="normal")),
-    # r"H": ("H", attrib(mathvariant="normal")),
-    # r"N": ("N", attrib(mathvariant="normal")),
-    r"\infty": ("∞", {}),  # &infin;
-    r"\aleph": "ℵ",  # &alefsym;
-    r"\imath": ("ı", attrib(mathvariant="italic")),  # &imath;
-    r"\jmath": ("ȷ", attrib(mathvariant="italic")),  # &jmath;
-
-    r"\top": "⊤",  # &top;
-    r"\bot": "⊥",  # &bot;
-    r"\Box": "□",  # &#x25a1;
-    # r"\reals": ("&reals;", attrib(mathvariant="double-struck"))
-
-    r"\ldots": "…",  # &hellip;
-    r"\cdots": "⋯",  # &ctdot;
-    r"\vdots": "⋮",  # &vellip;
-    r"\ddots": "⋱",  # &dtdot;
-    r"\Ddots": "⋰",  # &utdot;
-
-    r"\prime": "′",  # &prime;
-    r"\qed": "□",  # &#x25a1;
-
-    r"\angle": "∠",  # &angle;
-}
-
 relations = {
-    r"=": "=",
-    r"<": ">",
-    r">": "<",
     r"<=": "≤",
     r">=": "≥",
     r"<=>": "⇔",
     r"==>": "⇒",
+    r"=": "=",
+    r"<": "&lt;",  # <
+    r">": "&gt;",  # >
+    r":=": "≔",
 
 	r"\eq": "=",  # &equals;
 	r"\qeq": "≟", # &questeq;
@@ -178,11 +270,8 @@ relations = {
     r"\to": "→",  # &rightarrow;
     r"\longmapsto": "⟼",  # &longmapsto;
     r"\leadsto": "⤳",  # &rarrc;
-}
 
-not_relations = {
     # r"\not" should be applied to a relation to get not_relation
-
     r"/=": "≠",
     r"!=": "≠",
 
@@ -229,9 +318,8 @@ not_relations = {
     r"\nimplies": "⇏",  # &nRightarrow;
     r"\niff": "⇎",  # &nLeftrightarrow;
     r"\nequivalently": "⇎",  # &nLeftrightarrow;
-}
 
-arrows = {
+    # arrows
     r"-->": "→",
 
     r"\leftarrow": "←",  # &leftarrow;
@@ -267,44 +355,19 @@ arrows = {
     r"\nwarrow": "↖",  # &nwarrow;
 }
 
-large_operators = {
-    r"\sum": ("∑", attrib(form="prefix", largeop="true", movablelimits="true")),  # &sum;
-    r"\prod": ("∏", attrib(form="prefix", largeop="true", movablelimits="true")),  # &prod;
-    r"\coprod": ("∐", attrib(form="prefix", largeop="true", movablelimits="true")),  # &coprod;
-    r"\int": ("∫", attrib(form="prefix", largeop="true")),  # &#x222B;
-    r"\iint": ("∬", attrib(form="prefix", largeop="true")),  # &#x222C;
-    r"\iiint": ("∭", attrib(form="prefix", largeop="true")),  # &#x222D;
-    r"\oint": ("∲", attrib(form="prefix", largeop="true")),  # &#x2232;
-    r"\bigcap": ("⋂", attrib(form="prefix", largeop="true", movablelimits="true")),  # &bigcap;
-    r"\intersection": ("⋂", attrib(form="prefix", largeop="true", movablelimits="true")),  # &Intersection;
-    r"\bigcup": ("⋃", attrib(form="prefix", largeop="true", movablelimits="true")),  # &bigcup;
-    r"\union": ("⋃", attrib(form="prefix", largeop="true", movablelimits="true")),  # &Union;
-    r"\bigsqcup": ("⨆", attrib(form="prefix", largeop="true", movablelimits="true")), # &bigsqcup;
-    r"\bigvee": ("⋁", attrib(form="infix", largeop="true")), # &Vee;
-    r"\bigwedge": ("⋀", attrib(form="infix", largeop="true")), # &Wedge;
-    r"\bigodot": ("⨀", attrib(form="prefix", largeop="true", movablelimits="true")),  # &bigodot;
-    r"\bigotimes": ("⨂", attrib(form="prefix", largeop="true", movablelimits="true")),  # &bigotimes;
-    r"\bigoplus": ("⨁", attrib(form="prefix", largeop="true", movablelimits="true")),  # &bigoplus;
-    r"\biguplus": ("⨄", attrib(form="prefix", largeop="true", movablelimits="true")),  # &biguplus;
-
-
-    r"\forall": ("∀", attrib(form="prefix", largeop="true")),  # &forall;
-    r"\exists": ("∃", attrib(form="prefix", largeop="true")),  # &exist;
-}
-
 functions = {
-    r"\arg": ("arg", attrib(form="prefix", rspace="0")),
-    r"\deg": ("deg", attrib(form="prefix", rspace="0")),
-    r"\cos": ("cos", attrib(form="prefix", rspace="0")),
-    r"\cosh": ("cosh", attrib(form="prefix", rspace="0")),
-    r"\sin": ("sin", attrib(form="prefix", rspace="0")),
-    r"\sinh": ("sinh", attrib(form="prefix", rspace="0")),
-    r"\tan": ("tan", attrib(form="prefix", rspace="0")),
-    r"\tanh": ("tanh", attrib(form="prefix", rspace="0")),
-    r"\exp": ("exp", attrib(form="prefix", rspace="0")),
-    r"\log": ("log", attrib(form="prefix", rspace="0")),
-    r"\lg": ("lg", attrib(form="prefix", rspace="0")),
-    r"\ln": ("ln", attrib(form="prefix", rspace="0")),
+    r"\arg": ("arg", attrib(form="prefix")),
+    r"\deg": ("deg", attrib(form="prefix")),
+    r"\cos": ("cos", attrib(form="prefix")),
+    r"\cosh": ("cosh", attrib(form="prefix")),
+    r"\sin": ("sin", attrib(form="prefix")),
+    r"\sinh": ("sinh", attrib(form="prefix")),
+    r"\tan": ("tan", attrib(form="prefix")),
+    r"\tanh": ("tanh", attrib(form="prefix")),
+    r"\exp": ("exp", attrib(form="prefix")),
+    r"\log": ("log", attrib(form="prefix")),
+    r"\lg": ("lg", attrib(form="prefix")),
+    r"\ln": ("ln", attrib(form="prefix")),
     r"\lim": ("lim", attrib(form="prefix", movablelimits="true")),
     r"\sup": ("sup", attrib(form="prefix", movablelimits="true")),
     r"\limsup": ("limsup", attrib(form="prefix", movablelimits="true")),
@@ -314,14 +377,14 @@ functions = {
     r"\argmax": ("argmax", attrib(form="prefix", movablelimits="true")),
     r"\min": ("min", attrib(form="prefix", movablelimits="true")),
     r"\argmin": ("argmin", attrib(form="prefix", movablelimits="true")),
-    r"\det": ("det", attrib(form="prefix", rspace="0")),
-    r"\diag": ("diag", attrib(form="prefix", rspace="0")),
-    r"\ker": ("ker", attrib(form="prefix", rspace="0")),
-    r"\mod": ("mod", attrib(form="prefix", rspace="0")),
-    r"\sgn": ("sgn", attrib(form="prefix", rspace="0")),
-    r"\fourier": ("ℱ", attrib(form="prefix", rspace="0")), # &Fouriertrf;
-    r"\laplace": ("ℒ", attrib(form="prefix", rspace="0")),  # &Laplacetrf;
-    r"\mellin": ("ℳ", attrib(form="prefix", rspace="0")),  # &Mellintrf;
+    r"\det": ("det", attrib(form="prefix")),
+    r"\diag": ("diag", attrib(form="prefix")),
+    r"\ker": ("ker", attrib(form="prefix")),
+    r"\mod": ("mod", attrib(form="prefix")),
+    r"\sgn": ("sgn", attrib(form="prefix")),
+    r"\fourier": ("ℱ", attrib(form="prefix")), # &Fouriertrf;
+    r"\laplace": ("ℒ", attrib(form="prefix")),  # &Laplacetrf;
+    r"\mellin": ("ℳ", attrib(form="prefix")),  # &Mellintrf;
 }
 
 hats = {
@@ -334,7 +397,7 @@ hats = {
 	r"\bar": "&horbar;",
 	r"\vec": "&rarr;", # "&#8407;"),
 	r"\dot": "&dot;",
-	r"\ddot": "&ddot;",
+	r"\ddot": "&Dot;",
 	r"\breve": "&breve;",
 	r"\tilde": "&tilde;",
 	r"\overline": "&oline;",
@@ -344,19 +407,19 @@ hats = {
 	r"\overbrace": "&OverBrace;",
 }
 
-huts = {
+shoes = {
 	r"\underbrace": "&UnderBrace;",
 }
 
 
 environments = {
-    "matrix":  (None, None),
-    "pmatrix": ("(", ")"),
-    "bmatrix": ("[", "]"),
-    "Bmatrix": ("{", "}"),
-    "vmatrix": ("|", "|"),
-    "Vmatrix": ("‖", "‖"),
-    "cases":   ("{", None),
+    r"matrix":  (None, None),
+    r"pmatrix": ("(", ")"),
+    r"bmatrix": ("[", "]"),
+    r"Bmatrix": ("{", "}"),
+    r"vmatrix": ("|", "|"),
+    r"Vmatrix": ("‖", "‖"),
+    r"cases":   ("{", None),
 }
 
 
@@ -463,6 +526,14 @@ enclosures = {
     r"\enclose": "roundedbox",
 }
 
+spaces = {
+    # r"\ ": &nbsp; &NonBreakingSpace;
+    r"\;": {"width": "3pt"},
+	r"\quad": {"width": "1em"},
+	r"\thinspace": {"width": "1pt"},
+	r"\enspace": {"width": "5pt"},
+}
+
 
 sets = {
 	r"\emptyset": "&emptyset;",
@@ -482,12 +553,6 @@ sets = {
     r"\sphere": "𝕊",
 }
 
-spaces = {
-    r"\;": {"width": "3pt"},
-	r"\quad": {"width": "1em"},
-	r"\thinspace": {"width": "1pt"},
-	r"\enspace": {"width": "5pt"},
-}
 
 greeks = {
     r"\alpha": "α",  # &alpha;

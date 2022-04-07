@@ -2,14 +2,18 @@ from context.tokens import *  # builtins.tokenizer does this so why not me
 import glyph
 from node import mml, Comment, _NO_NUMBER, clone, traverse
 # from functools import wraps
-from functools import partial as _partial
+from functools import partial as partial, wraps
 
 
-def partial(func, *args, **kwargs):
-    curry = _partial(func, *args, **kwargs)
-    curry.__name__ = func.__name__ + "_partial"
-    curry.__module__ = func.__module__
-    return curry
+# https://github.com/pengbo-learn/python-math-expression-parser
+
+
+def wrapped(hof):
+    def _hof(func, *args, **kwargs):
+        return wraps(func)(hof(func, *args, **kwargs))
+    return _hof
+
+partial = wrapped(partial)
 
 
 class NoMatch(Exception):
@@ -32,20 +36,12 @@ def nonspace(tokens, i):
     return i
 
 
-# def default(tokens, i, left=None):
-#     raise NoMatch("No match for", tokens[i])
-
-
-def error(tokens, i):
-    return mml.merror(tokens[i].string), i+1
-
-
 def _string(tokens, i):
     return tokens[i].string, i+1
 
 
 def _argument(tokens, i):
-    arg, i = term(tokens, i)
+    arg, i = factor(tokens, i)
     arg = "".join(arg.itertext()).strip()
     return arg, i
 
@@ -54,18 +50,20 @@ def _isbox(el): return el.tag == "mrow" and len(el) == 1
 def _unbox(el): return _unbox(el[0]) if _isbox(el) else el
 
 
-def identifier(tokens, i):
-    symbol, attrib = map_get(glyph.identifiers, tokens[i].string)
-    return mml.mi(symbol, attrib), i+1
-
-
 def number(tokens, i):
     return mml.mn(tokens[i].string), i+1
 
 
-def operator(tokens, i):
-    symbol, attrib = map_get(glyph.operators, tokens[i].string)
-    return mml.mo(symbol, attrib), i+1
+def element(tokens, i, mtype, mapping):
+    symbol, attrib = map_get(mapping, tokens[i].string)
+    return mtype(symbol, attrib), i+1
+
+
+identifier = partial(element, mtype=mml.mi, mapping=glyph.identifiers)
+operator = partial(element, mtype=mml.mo, mapping=glyph.operators)
+relator = partial(element, mtype=mml.mo, mapping=glyph.relations)
+binary_operator = partial(element, mtype=mml.mo, mapping=glyph.binary_operators)
+
 
 def string_literal(tokens, i):
     return mml.ms(tokens[i].string[1:-1]), i+1
@@ -77,74 +75,28 @@ def comment(tokens, i):
     return el, i+1
 
 
-def open_bracket(tokens, i, stretchy="false"):
+def _separator(tokens, i, ttype, stretch, mapping, **attrib):
     i = nonspace(tokens, i)
-    b, i = _string(tokens, i)
-    if b == r"\left":
-        b, i = _string(tokens, i)
-        stretchy = "true"
-    b = glyph.open_brackets.get(b, b)
-    return mml.mo(b, stretchy=stretchy), i
-
-
-def close_bracket(tokens, i, stretchy="false"):
-    i = nonspace(tokens, i)
-    b, i = _string(tokens, i)
-    if b == r"\right":
-        b, i = _string(tokens, i)
-        stretchy = "true"
-    b = glyph.close_brackets.get(b, b)
-    return mml.mo(b, stretchy=stretchy), i
-
-
-def middle(tokens, i):
-    i = nonspace(tokens, i)
-    if tokens[i].type != COL_SEP:
+    if tokens[i].type != ttype:
         raise KeyError
     b, i = _string(tokens, i)
-    if b == r"\middle":
+    if b == stretch:
         b, i = _string(tokens, i)
-    b = glyph.col_separators.get(b, b)
-    return mml.mo(b), i
+        attrib["stretchy"] = "true"
+    b = mapping.get(b, b)
+    return mml.mo(b, **attrib), i
+
+open_bracket = partial(_separator,
+    ttype=OPEN, stretch=r"\left", mapping=glyph.open_brackets)
+close_bracket = partial(_separator,
+    ttype=CLOSE, stretch=r"\right", mapping=glyph.close_brackets)
+middle = partial(_separator,
+    ttype=COL_SEP, stretch=r"\middle", mapping=glyph.col_separators)
 
 
 def no_number(tokens, i):
     # Singleton object
     return _NO_NUMBER, i+1
-
-
-# def keyword(tokens, i):
-#     type_map = {
-#         IDENTIFIER: identifier,
-#         DETERMINANT: function,
-#         LARGEOP: operator,
-#         OPERATOR: operator,
-#         HAT: hat,
-#         NORM: norm,
-#         SQRT: sqrt,
-#         MATRIX: matrix,
-#         VARIANT: variant,
-#         ENCLOSE: enclose,
-#         CLASS: class_,
-#         TEXT: text,
-#         OPEN: group,
-#         ENVIRONMENT: environment,
-#         SERIES: series,
-#         NONUMBER: no_number,
-#     }
-#     type_ = keywords[tokens[i].string]
-
-#     return type_map[type_](tokens, i)
-
-
-# def left_keyword(tokens, i, left):
-#     type_map = {
-#         OVER: over,
-#         CHOOSE: choose,
-#     }
-#     type_ = keywords[tokens[i].string]
-
-#     return type_map[type_](tokens, i, left)
 
 
 def text(tokens, i):
@@ -185,6 +137,10 @@ def text(tokens, i):
             parts.clear()
             block, i = blocks(tokens, i+1)
             mrow.extend(block)
+
+            # block may end before getting to the next $
+            while tokens[i].type != TEXT_SEP:
+                i += 1
         else:
             parts.append(tokens[i])
         i += 1
@@ -203,7 +159,7 @@ def _subsups(tokens, i):
             if ttype not in {SUP, SUB}:
                 raise KeyError
 
-            node, i = term(tokens, i+1)
+            node, i = factor(tokens, i+1)
             if ttype == last:
                 subsup.append(mml.none())
             subsup.append(node)
@@ -223,7 +179,7 @@ def _scripts(tokens, i, ttypes):
 
     for ttype in ttypes:
         if i < len(tokens) and tokens[i].type == ttype:
-            node, i = term(tokens, i+1)
+            node, i = factor(tokens, i+1)
         else:
             node, i = mml.none(), i
         scripts.append(node)
@@ -245,7 +201,8 @@ def prescripts(tokens, i):
     prescripts, i = _subsups(tokens, i)
 
     try:
-        node, i = term(tokens, i)
+        # Add binop or relation here?
+        node, i = factor(tokens, i)
         mms.append(node)
     except KeyError:
         # Technically invalid? Graceful save
@@ -292,8 +249,8 @@ def multiscripts(tokens, i, base):
 
 
 def _binargs(tokens, i):
-    hyper, i = opterm(tokens, i)
-    base, i = opterm(tokens, i)
+    hyper, i = product(tokens, i)
+    base, i = product(tokens, i)
 
     return [hyper, base], i
 
@@ -336,7 +293,7 @@ def series(tokens, i):
     def _int(el): return int(el.text)
 
     (sub, sup), i = _subsup(tokens, i+1)
-    expr, i = opterm(tokens, i)  # is expression a better name?
+    expr, i = product(tokens, i)
     var, _assignment, start = sub
     end = _unbox(sup)
 
@@ -353,7 +310,7 @@ def series(tokens, i):
 
 
 def group(tokens, i):
-    left, i = open_bracket(tokens, i)
+    left, i = open_bracket(tokens, i, stretchy="false")
 
     group = []
     while i < len(tokens):
@@ -364,7 +321,7 @@ def group(tokens, i):
             group.append(sep)
         except KeyError:
             break
-    right, i = close_bracket(tokens, i)
+    right, i = close_bracket(tokens, i, stretchy="false")
 
     mrow = mml.mrow()
 
@@ -382,7 +339,7 @@ def group(tokens, i):
 
 def class_(tokens, i):
     name, i = _argument(tokens, i+1)
-    node, i = term(tokens, i)
+    node, i = factor(tokens, i)
 
     node.set("class", name)
 
@@ -390,7 +347,7 @@ def class_(tokens, i):
 
 
 def displaystyle(tokens, i):
-    node, i = term(tokens, i+1)
+    node, i = factor(tokens, i+1)
 
     node.set("displaystyle", "true")
 
@@ -399,7 +356,7 @@ def displaystyle(tokens, i):
 
 def enclose(tokens, i):
     name, i = _string(tokens, i)
-    node, i = term(tokens, i)
+    node, i = factor(tokens, i)
 
     notation = glyph.enclosures[name]
 
@@ -414,7 +371,7 @@ def enclose(tokens, i):
 
 
 def pad(tokens, i):
-    node, i = opterm(tokens, i+1)
+    node, i = product(tokens, i+1)
     node = _unbox(node)
 
     mpadded = mml.mpadded([node], lspace="0.5em", rspace="0.5em")
@@ -422,13 +379,13 @@ def pad(tokens, i):
 
 
 def function(tokens, i):
-    return operator(tokens, i)
-    # return mml.mo(tokens[i].string.lstrip("\\"), form="prefix"), i+1
+    symbol, attrib = map_get(glyph.functions, tokens[i].string)
+    return mml.mo(symbol, attrib), i+1
 
 
 def variant(tokens, i):
     font, i = _string(tokens, i)
-    node, i = term(tokens, i)
+    node, i = factor(tokens, i)
 
     style = glyph.fonts[font]
     fontable = {"mi", "mn", "mo", "ms", "mtext"}
@@ -442,7 +399,7 @@ def variant(tokens, i):
 
 def hat(tokens, i):
     htype, i = _string(tokens, i)
-    node, i = term(tokens, i)
+    node, i = factor(tokens, i)
     node = _unbox(node)
 
     hat = mml.mo(glyph.hats[htype])
@@ -451,13 +408,12 @@ def hat(tokens, i):
     return mover, i
 
 
-def hut(tokens, i):
-    # hat under = hut
+def shoe(tokens, i):
     htype, i = _string(tokens, i)
-    node, i = term(tokens, i)
+    node, i = factor(tokens, i)
     node = _unbox(node)
 
-    hat = mml.mo(glyph.huts[htype])
+    hat = mml.mo(glyph.shoes[htype])
 
     mover = mml.munder([node, hat], accent="true")
     return mover, i
@@ -465,7 +421,7 @@ def hut(tokens, i):
 
 def norm(tokens, i):
     ntype, i = _string(tokens, i)
-    node, i = opterm(tokens, i)
+    node, i = product(tokens, i)
     node = _unbox(node)
 
     def _bracket(b): return mml.mo(b, stretchy="true")
@@ -478,7 +434,7 @@ def norm(tokens, i):
 
 def sqrt(tokens, i):
     _, i = _string(tokens, i)
-    node, i = opterm(tokens, i)
+    node, i = product(tokens, i)
     node = _unbox(node)
 
     msqrt = mml.msqrt([node])
@@ -581,26 +537,24 @@ def environment(tokens, i):
 
     def _bracket(b): return mml.mo(b, stretchy="true")
 
-
     left, right = map(_bracket, glyph.environments[mtype])
 
     bracketed = []
-    if left is not None: bracketed.append(left)
+    if left.text is not None: bracketed.append(left)
     bracketed.append(mml.mtable(table))
-    if right is not None: bracketed.append(right)
+    if right.text is not None: bracketed.append(right)
     matrix = mml.mrow(bracketed)
+
 
     return matrix, i
 
 
-def term(tokens, i):
+def factor(tokens, i):
     type_map = {
-        # "KEYWORD": keyword,
         IDENTIFIER: identifier,
+        ENVIRONMENT: identifier,
         NUMBER: number,
-        BINOP: operator,
         OPERATOR: operator,
-        RELATION: operator,
         SUB: prescripts,
         SUP: prescripts,
         PRESCRIPT: prescripts,
@@ -610,19 +564,20 @@ def term(tokens, i):
         STRING: string_literal,
 
         IDENTIFIER: identifier,
-        DETERMINANT: function,
+        FUNCTION: function,
         LARGEOP: operator,
         OPERATOR: operator,
         HAT: hat,
+        SHOE: shoe,
         NORM: norm,
         SQRT: sqrt,
         MATRIX: matrix,
         VARIANT: variant,
         ENCLOSE: enclose,
-        CLASS: class_,
+        CLASS_: class_,
         TEXT: text,
         OPEN: group,
-        ENVIRONMENT: environment,
+        BEGIN: environment,
         SERIES: series,
         NO_NUMBER: no_number,
         COMMENT: comment,
@@ -632,7 +587,6 @@ def term(tokens, i):
         ROOT: root,
         DISPLAYSTYLE: displaystyle,
         PAD: pad,
-        HUT: hut,
     }
 
     i = nonspace(tokens, i)
@@ -640,7 +594,7 @@ def term(tokens, i):
     return type_map[tokens[i].type](tokens, i)
 
 
-def term_operation(tokens, i, left):
+def scripted(tokens, i, left):
     type_map = {
         SUB: multiscripts,
         SUP: multiscripts,
@@ -653,30 +607,120 @@ def term_operation(tokens, i, left):
     return type_map[tokens[i].type](tokens, i, left)
 
 
-def opterm(tokens, i):
-    # similar to blocks
-    node, i = term(tokens, i)
+def product(tokens, i):
+    node, i = factor(tokens, i)
+
+    if i < len(tokens):
+        try:
+            node, i = scripted(tokens, i, node)
+        except KeyError:
+            pass
+
+    return node, i
+
+
+def is_space(el):
+    if el.tag in {"mtext", "mspace", "maligngroup", "malignmark"}:
+        return True
+    if el.tag in {"mstyle", "mphantom", "mpadded", "mrow"} and all(map(is_space, el)):
+        return True
+    return False
+
+
+def is_embellished(el):
+    if el.tag == "mo":
+        return True
+    if el.tag in {"msub", "msup", "msubsup", "munder", "mover", "munderover", "mmultiscripts", "mfrac"} and is_embellished(el[0]):
+        return True
+    if el.tag in {"mstyle", "mphantom", "mpadded", "mrow"}:
+        em = sum(map(is_embellished, el))
+        sp = sum(map(is_space, el))
+        # There can only be one embellished child; the rest must be space-like
+        return em == 1 and em + sp == len(el)
+    return False
+
+
+def _embellish(el):
+    if el.tag == "mo":
+        el.set("form", "prefix")
+        el.set("rspace", "0")
+    elif el.tag in {"msub", "msup", "msubsup", "munder", "mover", "munderover", "mmultiscripts", "mfrac"}:
+        _embellish(el[0])
+    elif el.tag in {"mstyle", "mphantom", "mpadded", "mrow"}:
+        em = sum(map(is_embellished, el))
+        sp = sum(map(is_space, el))
+        # There can only be one embellished child; the rest must be space-like
+        if em == 1 and em + sp == len(el):
+            for c in el:
+                if c.tag == "mo":
+                    _embellish(c)
+                    break
+    else:
+        # not an operator
+        pass
+
+
+def term(tokens, i):
+    products = []
+
+    prod, i = product(tokens, i)
+    products.append(prod)
 
     while i < len(tokens):
         try:
-            node, i = term_operation(tokens, i, node)
+            prod, i = product(tokens, i)
+
+            if prod.tag == "mrow" and prod[0].text == "(":
+                _embellish(products[-1])
+
+            products.append(prod)
+
         except KeyError:
             break
 
-    return node,i
+    return products, i
 
 
-def terms(tokens, i):
-    terms = []
+def binop(tokens, i):
+    i = nonspace(tokens, i)
+
+    if tokens[i].type != BINOP:
+        raise KeyError
+
+    binop, i = binary_operator(tokens, i)
+
+    try:
+        binop, i = scripted(tokens, i, binop)
+    except KeyError:
+        pass
+
+    return binop, i
+
+
+def expression(tokens, i):
+    expression = []
+
+    # Check if first element is binary operator
+    try:
+        node, i = binop(tokens, i)
+        node.set("prefix", "true")
+        expression.append(node)
+    except (KeyError, IndexError):
+        pass
 
     while i < len(tokens):
         try:
-            node, i = opterm(tokens, i)
-            terms.append(node)
+            terms, i = term(tokens, i)
+            expression.extend(terms)
+            try:
+                node, i = binop(tokens, i)
+                expression.append(node)
+            except (KeyError, IndexError):
+                pass
         except KeyError:
             break
 
-    return terms, i
+    return expression, i
 
 
 def _collapse(nodes):
@@ -692,7 +736,7 @@ def _collapse2(left, right):
 
 def over(tokens, i, left):
     # otype, i = _string(tokens, i)
-    right, i = terms(tokens, i+1)
+    right, i = expression(tokens, i+1)
 
     frac = mml.mfrac(_collapse2(left, right))
 
@@ -709,7 +753,7 @@ def fraction(tokens, i):
 
 
 def choose(tokens, i, left):
-    right, i = terms(tokens, i+1)
+    right, i = expression(tokens, i+1)
 
     lb, rb = mml.mo("("), mml.mo(")")
     children = _collapse2(left, right)
@@ -722,11 +766,24 @@ def binomial(tokens, i):
     return mml.mfrac(args, linethickness="0"), i
 
 
+def relation(tokens, i, left):
+    relation, i = relator(tokens, i)
+
+    try:
+        relation, i = scripted(tokens, i, relation)
+    except KeyError:
+        pass
+
+    right, i = expression(tokens, i)
+
+    return [*left, relation, *right], i
+
+
 def block_operation(tokens, i, left):
     type_map = {
         OVER: over,
         CHOOSE: choose,
-        # "KEYWORD": left_keyword,
+        RELATION: relation,
     }
     i = nonspace(tokens, i)
 
@@ -734,7 +791,7 @@ def block_operation(tokens, i, left):
 
 
 def blocks(tokens, i):
-    node, i = terms(tokens, i)
+    node, i = expression(tokens, i)
 
     while i < len(tokens):
         try:
@@ -843,36 +900,16 @@ class Parser:
         })
         # tree = Tree(root)
 
-        if self.is_multiline(tokens):
-            node, i = formula(tokens, 0)
-        else:
-            node, i = statement(tokens, 0)
+        parser = formula if self.is_multiline(tokens) else statement
 
-        assert i == len(tokens), f"Failed to parse at: {tokens[i]}"
+        nodes, i = parser(tokens, 0)
 
-        root.extend(node)
+        assert i == len(tokens), f"Failed to parse near: {tokens[i]}"
+
+
+        if len(nodes) == 0:
+            nodes.append(mml.merror([mml.mtext("EMPTY EXPRESSION")]))
+
+        root.extend(nodes)
+
         return root
-
-
-
-# from time import time
-# from collections import defaultdict
-
-# func_times = defaultdict(float)
-
-# def get_functions():
-#     def timer(func):
-#         def _time(*args, **kwargs):
-#             t0 = time()
-#             result = func(*args, **kwargs)
-#             tf = time()
-#             func_times[func.__name__] += tf - t0
-#             return result
-#         return _time
-
-#     excl = {"NoMatch"}
-#     for name, func in globals().items():
-#         if callable(func) and func.__module__ == __name__ and name not in excl:
-#             globals()[name] = timer(func)
-
-# get_functions()
