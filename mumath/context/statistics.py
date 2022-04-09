@@ -1,4 +1,4 @@
-symbols = {
+identifiers = {
 	r"\done"   : ("⚀", {}),
 	r"\dtwo"   : ("⚁", {}),
 	r"\dthree" : ("⚂", {}),

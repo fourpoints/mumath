@@ -1,14 +1,34 @@
 from context.tokens import *  # builtins.tokenizer does this so why not me
-import glyph
 from node import mml, Comment, _NO_NUMBER, clone, traverse
 # from functools import wraps
+from itertools import islice, count
 from functools import partial as partial, wraps
 
 
 # https://github.com/pengbo-learn/python-math-expression-parser
 
+# drawn characters:
+# - mi, mn, mo, ms, mspace?, mtext?
+# - menclose, mfrac, mroot, msqrt
+
+
+def diff(tokens, i, attrib=None):
+    attrib = attrib if attrib is not None else {}
+    # a bit overly optimized, based on the flag value
+    # which coincidentally corresponds to the index
+    mark = [None, "n", "p", "n p"][tokens[i].flag]
+
+    if mark is not None:
+        class_ = attrib.get("class")
+        if class_ is None:
+            attrib["class"] = mark
+        else:
+            attrib["class"] = " ".join((class_, mark))
+    return attrib
+
 
 def wrapped(hof):
+    # hof = higher order function
     def _hof(func, *args, **kwargs):
         return wraps(func)(hof(func, *args, **kwargs))
     return _hof
@@ -30,18 +50,17 @@ def map_get(mapping, key):
 
 
 def nonspace(tokens, i):
-    for i, e in enumerate(tokens[i:], start=i):
-        if e.type != SOFT_SPACE:
-            break
+    for i, e in enumerate(islice(tokens, i, None), start=i):
+        if e.type != SOFT_SPACE: break
     return i
 
 
-def _string(tokens, i):
+def _string(glyph, tokens, i):
     return tokens[i].string, i+1
 
 
-def _argument(tokens, i):
-    arg, i = factor(tokens, i)
+def _argument(glyph, tokens, i):
+    arg, i = factor(glyph, tokens, i)
     arg = "".join(arg.itertext()).strip()
     return arg, i
 
@@ -50,70 +69,76 @@ def _isbox(el): return el.tag == "mrow" and len(el) == 1
 def _unbox(el): return _unbox(el[0]) if _isbox(el) else el
 
 
-def number(tokens, i):
-    return mml.mn(tokens[i].string), i+1
+def number(glyph, tokens, i):
+    return mml.mn(tokens[i].string, diff(tokens, i)), i+1
 
 
 def element(tokens, i, mtype, mapping):
     symbol, attrib = map_get(mapping, tokens[i].string)
+    attrib = diff(tokens, i, attrib)
     return mtype(symbol, attrib), i+1
 
+def identifier(glyph, tokens, i):
+    return element(tokens, i, mml.mi, glyph.identifiers)
 
-identifier = partial(element, mtype=mml.mi, mapping=glyph.identifiers)
-operator = partial(element, mtype=mml.mo, mapping=glyph.operators)
-relator = partial(element, mtype=mml.mo, mapping=glyph.relations)
-binary_operator = partial(element, mtype=mml.mo, mapping=glyph.binary_operators)
+def operator(glyph, tokens, i):
+    return element(tokens, i, mml.mo, glyph.operators)
+
+def relator(glyph, tokens, i):
+    return element(tokens, i, mml.mo, glyph.relations)
+
+def binary_operator(glyph, tokens, i):
+    return element(tokens, i, mml.mo, glyph.binary_operators)
 
 
-def string_literal(tokens, i):
-    return mml.ms(tokens[i].string[1:-1]), i+1
+def string_literal(glyph, tokens, i):
+    return mml.ms(tokens[i].string[1:-1], diff(tokens, i)), i+1
 
 
-def comment(tokens, i):
+def comment(glyph, tokens, i):
     el = Comment(comment)
     el.text = tokens[i].string[1:].lstrip()
     return el, i+1
 
 
-def _separator(tokens, i, ttype, stretch, mapping, **attrib):
+def _separator(glyph, tokens, i, ttype, stretch, mapping, attrib):
     i = nonspace(tokens, i)
     if tokens[i].type != ttype:
         raise KeyError
-    b, i = _string(tokens, i)
+    b, i = _string(glyph, tokens, i)
     if b == stretch:
-        b, i = _string(tokens, i)
+        b, i = _string(glyph, tokens, i)
         attrib["stretchy"] = "true"
     b = mapping.get(b, b)
-    return mml.mo(b, **attrib), i
-
-open_bracket = partial(_separator,
-    ttype=OPEN, stretch=r"\left", mapping=glyph.open_brackets)
-close_bracket = partial(_separator,
-    ttype=CLOSE, stretch=r"\right", mapping=glyph.close_brackets)
-middle = partial(_separator,
-    ttype=COL_SEP, stretch=r"\middle", mapping=glyph.col_separators)
+    return mml.mo(b, **diff(tokens, i-1, attrib)), i
 
 
-def no_number(tokens, i):
+def open_bracket(glyph, tokens, i, **attrib):
+    return _separator(glyph, tokens, i, OPEN, r"\left", glyph.open_brackets, attrib)
+
+
+def close_bracket(glyph, tokens, i, **attrib):
+    return _separator(glyph, tokens, i, CLOSE, r"\right", glyph.close_brackets, attrib)
+
+
+def middle(glyph, tokens, i, **attrib):
+    return _separator(glyph, tokens, i, COL_SEP, r"\middle", glyph.col_separators, attrib)
+
+
+def no_number(glyph, tokens, i):
     # Singleton object
     return _NO_NUMBER, i+1
 
 
-def text(tokens, i):
-    _b, i = open_bracket(tokens, i+1)
+def text(glyph, tokens, i):
+    attrib = diff(tokens, i)
+    _b, i = open_bracket(glyph, tokens, i+1)
 
     def stringed(parts):
-        def spacelength(parts):
-            n = 0
-            for n, e in enumerate(parts):
-                if e.type != SOFT_SPACE:
-                    break
-            return n
-
         def width(k): return f"{round(k/5, 1)}em"
 
-        n = spacelength(parts)
-        m = spacelength(reversed(parts))
+        n = nonspace(parts, 0)
+        m = nonspace(reversed(parts), 0)
         # unfortuntely parts[n:-m] doesn't work for m=0
         text = "".join(e.string for e in parts[n:len(parts)-m])
 
@@ -125,7 +150,7 @@ def text(tokens, i):
         return strings
 
 
-    mrow = mml.mrow()
+    mrow = mml.mrow(attrib=attrib)
 
     parts = []
     while i < len(tokens):
@@ -135,7 +160,7 @@ def text(tokens, i):
         elif tokens[i].type == TEXT_SEP:
             mrow.extend(stringed(parts))
             parts.clear()
-            block, i = blocks(tokens, i+1)
+            block, i = blocks(glyph, tokens, i+1)
             mrow.extend(block)
 
             # block may end before getting to the next $
@@ -145,12 +170,12 @@ def text(tokens, i):
             parts.append(tokens[i])
         i += 1
 
-    _b, i = close_bracket(tokens, i)
+    _b, i = close_bracket(glyph, tokens, i)
 
     return mrow, i
 
 
-def _subsups(tokens, i):
+def _subsups(glyph, tokens, i):
     subsup = []
     last = SUP
     while i < len(tokens):
@@ -159,7 +184,7 @@ def _subsups(tokens, i):
             if ttype not in {SUP, SUB}:
                 raise KeyError
 
-            node, i = factor(tokens, i+1)
+            node, i = factor(glyph, tokens, i+1)
             if ttype == last:
                 subsup.append(mml.none())
             subsup.append(node)
@@ -174,12 +199,12 @@ def _subsups(tokens, i):
 
 
 
-def _scripts(tokens, i, ttypes):
+def _scripts(glyph, tokens, i, ttypes):
     scripts = []
 
     for ttype in ttypes:
         if i < len(tokens) and tokens[i].type == ttype:
-            node, i = factor(tokens, i+1)
+            node, i = factor(glyph, tokens, i+1)
         else:
             node, i = mml.none(), i
         scripts.append(node)
@@ -191,18 +216,18 @@ _subsup = partial(_scripts, ttypes=[SUB, SUP])
 _subbsupp = partial(_scripts, ttypes=[SUBB, SUPP])
 
 
-def prescripts(tokens, i):
+def prescripts(glyph, tokens, i):
     mms = mml.mmultiscripts()
     mpre = mml.mprescripts()
 
     if tokens[i].type == PRESCRIPT:
         i += 1
 
-    prescripts, i = _subsups(tokens, i)
+    prescripts, i = _subsups(glyph, tokens, i)
 
     try:
         # Add binop or relation here?
-        node, i = factor(tokens, i)
+        node, i = factor(glyph, tokens, i)
         mms.append(node)
     except KeyError:
         # Technically invalid? Graceful save
@@ -210,7 +235,7 @@ def prescripts(tokens, i):
         mms.extend(prescripts)
         return mms, i
 
-    postscripts, i = _subsups(tokens, i)
+    postscripts, i = _subsups(glyph, tokens, i)
 
     mms.extend(postscripts)
     mms.append(mpre)
@@ -219,8 +244,8 @@ def prescripts(tokens, i):
     return mms, i
 
 
-def multiscripts(tokens, i, base):
-    postscripts, i = _subsups(tokens, i)
+def multiscripts(glyph, tokens, i, base):
+    postscripts, i = _subsups(glyph, tokens, i)
 
     if len(postscripts) > 2:
         return mml.mmultiscripts([base, *postscripts]), i
@@ -248,26 +273,26 @@ def multiscripts(tokens, i, base):
         raise KeyError
 
 
-def _binargs(tokens, i):
-    hyper, i = product(tokens, i)
-    base, i = product(tokens, i)
+def _binargs(glyph, tokens, i):
+    hyper, i = product(glyph, tokens, i)
+    base, i = product(glyph, tokens, i)
 
     return [hyper, base], i
 
 
-def underset(tokens, i):
+def underset(glyph, tokens, i):
     # generalize overset/underset to hyperscript?
-    (under, base), i = _binargs(tokens, i+1)
+    (under, base), i = _binargs(glyph, tokens, i+1)
     return mml.munder([base, under]), i
 
 
-def overset(tokens, i):
-    (over, base), i = _binargs(tokens, i+1)
+def overset(glyph, tokens, i):
+    (over, base), i = _binargs(glyph, tokens, i+1)
     return mml.mover([base, over]), i
 
 
-def underover(tokens, i, base):
-    stack, i = _subbsupp(tokens, i)
+def underover(glyph, tokens, i, base):
+    stack, i = _subbsupp(glyph, tokens, i)
     subb, supp = stack
 
     if subb.tag == supp.tag == "none":  # slow
@@ -280,20 +305,21 @@ def underover(tokens, i, base):
         return mml.munderover([base, *stack]), i
 
 
-def series(tokens, i):
+def series(glyph, tokens, i):
     def mutate(node, var, n):
         for el in traverse(node):
             if el.text == var.text:
                 el.text = str(n)
-        return node
 
     def template(expr, var, n):
-        return mutate(clone(expr), var, n)
+        node = clone(expr)
+        mutate(node, var, n)
+        return node
 
     def _int(el): return int(el.text)
 
-    (sub, sup), i = _subsup(tokens, i+1)
-    expr, i = product(tokens, i)
+    (sub, sup), i = _subsup(glyph, tokens, i+1)
+    expr, i = product(glyph, tokens, i)
     var, _assignment, start = sub
     end = _unbox(sup)
 
@@ -309,19 +335,19 @@ def series(tokens, i):
     return mrow, i
 
 
-def group(tokens, i):
-    left, i = open_bracket(tokens, i, stretchy="false")
+def group(glyph, tokens, i):
+    left, i = open_bracket(glyph, tokens, i, stretchy="false")
 
     group = []
     while i < len(tokens):
         try:
-            block, i = blocks(tokens, i)
+            block, i = blocks(glyph, tokens, i)
             group.extend(block)
-            sep, i = middle(tokens, i)
+            sep, i = middle(glyph, tokens, i)
             group.append(sep)
         except KeyError:
             break
-    right, i = close_bracket(tokens, i, stretchy="false")
+    right, i = close_bracket(glyph, tokens, i, stretchy="false")
 
     mrow = mml.mrow()
 
@@ -337,26 +363,27 @@ def group(tokens, i):
     return mrow, i
 
 
-def class_(tokens, i):
-    name, i = _argument(tokens, i+1)
-    node, i = factor(tokens, i)
+def class_(glyph, tokens, i):
+    name, i = _argument(glyph, tokens, i+1)
+    node, i = factor(glyph, tokens, i)
 
     node.set("class", name)
 
     return node, i
 
 
-def displaystyle(tokens, i):
-    node, i = factor(tokens, i+1)
+def displaystyle(glyph, tokens, i):
+    node, i = factor(glyph, tokens, i+1)
 
     node.set("displaystyle", "true")
 
     return node, i
 
 
-def enclose(tokens, i):
-    name, i = _string(tokens, i)
-    node, i = factor(tokens, i)
+def enclose(glyph, tokens, i):
+    attrib = diff(tokens, i)
+    name, i = _string(glyph, tokens, i)
+    node, i = factor(glyph, tokens, i)
 
     notation = glyph.enclosures[name]
 
@@ -370,22 +397,22 @@ def enclose(tokens, i):
     return node, i
 
 
-def pad(tokens, i):
-    node, i = product(tokens, i+1)
+def pad(glyph, tokens, i):
+    node, i = product(glyph, tokens, i+1)
     node = _unbox(node)
 
     mpadded = mml.mpadded([node], lspace="0.5em", rspace="0.5em")
     return mpadded, i
 
 
-def function(tokens, i):
+def function(glyph, tokens, i):
     symbol, attrib = map_get(glyph.functions, tokens[i].string)
-    return mml.mo(symbol, attrib), i+1
+    return mml.mo(symbol, diff(tokens, i, attrib)), i+1
 
 
-def variant(tokens, i):
-    font, i = _string(tokens, i)
-    node, i = factor(tokens, i)
+def variant(glyph, tokens, i):
+    font, i = _string(glyph, tokens, i)
+    node, i = factor(glyph, tokens, i)
 
     style = glyph.fonts[font]
     fontable = {"mi", "mn", "mo", "ms", "mtext"}
@@ -397,34 +424,37 @@ def variant(tokens, i):
     return node, i
 
 
-def hat(tokens, i):
-    htype, i = _string(tokens, i)
-    node, i = factor(tokens, i)
+def hat(glyph, tokens, i):
+    attrib = diff(tokens, i)
+    htype, i = _string(glyph, tokens, i)
+    node, i = factor(glyph, tokens, i)
     node = _unbox(node)
 
-    hat = mml.mo(glyph.hats[htype])
+    hat = mml.mo(glyph.hats[htype], attrib=attrib)
 
     mover = mml.mover([node, hat], accent="true")
     return mover, i
 
 
-def shoe(tokens, i):
-    htype, i = _string(tokens, i)
-    node, i = factor(tokens, i)
+def shoe(glyph, tokens, i):
+    attrib = diff(tokens, i)
+    htype, i = _string(glyph, tokens, i)
+    node, i = factor(glyph, tokens, i)
     node = _unbox(node)
 
-    hat = mml.mo(glyph.shoes[htype])
+    hat = mml.mo(glyph.shoes[htype], attrib=attrib)
 
     mover = mml.munder([node, hat], accent="true")
     return mover, i
 
 
-def norm(tokens, i):
-    ntype, i = _string(tokens, i)
-    node, i = product(tokens, i)
+def norm(glyph, tokens, i):
+    attrib = diff(tokens, i)
+    ntype, i = _string(glyph, tokens, i)
+    node, i = product(glyph, tokens, i)
     node = _unbox(node)
 
-    def _bracket(b): return mml.mo(b, stretchy="true")
+    def _bracket(b): return mml.mo(b, stretchy="true", attrib=attrib.copy())
 
     lb, rb = map(_bracket, glyph.brackets[ntype])
 
@@ -432,18 +462,20 @@ def norm(tokens, i):
     return norm, i
 
 
-def sqrt(tokens, i):
-    _, i = _string(tokens, i)
-    node, i = product(tokens, i)
+def sqrt(glyph, tokens, i):
+    attrib = diff(tokens, i)
+    _, i = _string(glyph, tokens, i)
+    node, i = product(glyph, tokens, i)
     node = _unbox(node)
 
-    msqrt = mml.msqrt([node])
+    msqrt = mml.msqrt([node], attrib=attrib)
     return msqrt, i
 
 
-def root(tokens, i):
-    _, i = _string(tokens, i)
-    [root, base], i = _binargs(tokens, i)
+def root(glyph, tokens, i):
+    attrib = diff(tokens, i)
+    _, i = _string(glyph, tokens, i)
+    [root, base], i = _binargs(glyph, tokens, i)
 
     # can be of the form \root[2+2]{3}
     if len(root) > 1 and root[0].text == "[" and root[-1].text == "]":
@@ -454,11 +486,11 @@ def root(tokens, i):
     base = _unbox(base)
     root = _unbox(root)
 
-    mroot = mml.mroot([base, root])
+    mroot = mml.mroot([base, root], attrib=attrib)
     return mroot, i
 
 
-def _sep(tokens, i, ttype):
+def _sep(glyph, tokens, i, ttype):
     i = nonspace(tokens, i)
     if tokens[i].type == ttype:
         return i + 1
@@ -469,17 +501,17 @@ _row_sep = partial(_sep, ttype=ROW_SEP)
 _col_sep = partial(_sep, ttype=COL_SEP)
 
 
-def _row(tokens, i):
+def _row(glyph, tokens, i):
     row = []
     while i < len(tokens):
         try:
-            cell, i = blocks(tokens, i)
+            cell, i = blocks(glyph, tokens, i)
             row.append(cell)
-            i = _col_sep(tokens, i)
+            i = _col_sep(glyph, tokens, i)
         except KeyError:
             try:
                 # in case of empty cell
-                i = _col_sep(tokens, i)
+                i = _col_sep(glyph, tokens, i)
                 row.append([])
             except KeyError:
                 break
@@ -488,13 +520,13 @@ def _row(tokens, i):
     return row, i
 
 
-def _table(tokens, i):
+def _table(glyph, tokens, i):
     table = []
     while i < len(tokens):
         try:
-            row, i = _row(tokens, i)
+            row, i = _row(glyph, tokens, i)
             table.append(row)
-            i = _row_sep(tokens, i)
+            i = _row_sep(glyph, tokens, i)
         except KeyError:
             break
 
@@ -502,8 +534,8 @@ def _table(tokens, i):
     return table, i
 
 
-def matrix(tokens, i):
-    def braces(mtype, lbracket, rbracket):
+def matrix(glyph, tokens, i):
+    def _brackets(mtype, lbracket, rbracket):
         if mtype == r"\matrix":
             return lbracket, rbracket
         elif mtype == r"\cases":
@@ -511,12 +543,12 @@ def matrix(tokens, i):
         else:
             return None, None
 
-    mtype, i = _string(tokens, i)
-    lbracket, i = open_bracket(tokens, i, stretchy="true")
-    table, i = _table(tokens, i)
-    rbracket, i = close_bracket(tokens, i, stretchy="true")
+    mtype, i = _string(glyph, tokens, i)
+    lbracket, i = open_bracket(glyph, tokens, i, stretchy="true")
+    table, i = _table(glyph, tokens, i)
+    rbracket, i = close_bracket(glyph, tokens, i, stretchy="true")
 
-    left, right = braces(mtype, lbracket, rbracket)
+    left, right = _brackets(mtype, lbracket, rbracket)
 
     bracketed = []
     if left is not None: bracketed.append(left)
@@ -527,12 +559,12 @@ def matrix(tokens, i):
     return matrix, i
 
 
-def environment(tokens, i):
-    mtype, i = _argument(tokens, i+1)
-    table, i = _table(tokens, i)
+def environment(glyph, tokens, i):
+    mtype, i = _argument(glyph, tokens, i+1)
+    table, i = _table(glyph, tokens, i)
     i = nonspace(tokens, i)
     assert tokens[i].string == r"\end"
-    mtype2, i = _argument(tokens, i+1)
+    mtype2, i = _argument(glyph, tokens, i+1)
     assert mtype == mtype2
 
     def _bracket(b): return mml.mo(b, stretchy="true")
@@ -549,7 +581,7 @@ def environment(tokens, i):
     return matrix, i
 
 
-def factor(tokens, i):
+def factor(glyph, tokens, i):
     type_map = {
         IDENTIFIER: identifier,
         ENVIRONMENT: identifier,
@@ -587,14 +619,17 @@ def factor(tokens, i):
         ROOT: root,
         DISPLAYSTYLE: displaystyle,
         PAD: pad,
+
+        BINOP: binary_operator,
+        RELATION: relator,
     }
 
     i = nonspace(tokens, i)
 
-    return type_map[tokens[i].type](tokens, i)
+    return type_map[tokens[i].type](glyph, tokens, i)
 
 
-def scripted(tokens, i, left):
+def scripted(glyph, tokens, i, left):
     type_map = {
         SUB: multiscripts,
         SUP: multiscripts,
@@ -604,15 +639,15 @@ def scripted(tokens, i, left):
 
     i = nonspace(tokens, i)
 
-    return type_map[tokens[i].type](tokens, i, left)
+    return type_map[tokens[i].type](glyph, tokens, i, left)
 
 
-def product(tokens, i):
-    node, i = factor(tokens, i)
+def product(glyph, tokens, i):
+    node, i = factor(glyph, tokens, i)
 
     if i < len(tokens):
         try:
-            node, i = scripted(tokens, i, node)
+            node, i = scripted(glyph, tokens, i, node)
         except KeyError:
             pass
 
@@ -641,7 +676,7 @@ def is_embellished(el):
 
 
 def _embellish(el):
-    if el.tag == "mo":
+    if el.tag == "mo" and el.get("form"):
         el.set("form", "prefix")
         el.set("rspace", "0")
     elif el.tag in {"msub", "msup", "msubsup", "munder", "mover", "munderover", "mmultiscripts", "mfrac"}:
@@ -660,15 +695,15 @@ def _embellish(el):
         pass
 
 
-def term(tokens, i):
+def term(glyph, tokens, i):
     products = []
 
-    prod, i = product(tokens, i)
+    prod, i = product(glyph, tokens, i)
     products.append(prod)
 
     while i < len(tokens):
         try:
-            prod, i = product(tokens, i)
+            prod, i = product(glyph, tokens, i)
 
             if prod.tag == "mrow" and prod[0].text == "(":
                 _embellish(products[-1])
@@ -681,28 +716,28 @@ def term(tokens, i):
     return products, i
 
 
-def binop(tokens, i):
+def binop(glyph, tokens, i):
     i = nonspace(tokens, i)
 
     if tokens[i].type != BINOP:
         raise KeyError
 
-    binop, i = binary_operator(tokens, i)
+    binop, i = binary_operator(glyph, tokens, i)
 
     try:
-        binop, i = scripted(tokens, i, binop)
+        binop, i = scripted(glyph, tokens, i, binop)
     except KeyError:
         pass
 
     return binop, i
 
 
-def expression(tokens, i):
+def expression(glyph, tokens, i):
     expression = []
 
     # Check if first element is binary operator
     try:
-        node, i = binop(tokens, i)
+        node, i = binop(glyph, tokens, i)
         node.set("prefix", "true")
         expression.append(node)
     except (KeyError, IndexError):
@@ -710,10 +745,10 @@ def expression(tokens, i):
 
     while i < len(tokens):
         try:
-            terms, i = term(tokens, i)
+            terms, i = term(glyph, tokens, i)
             expression.extend(terms)
             try:
-                node, i = binop(tokens, i)
+                node, i = binop(glyph, tokens, i)
                 expression.append(node)
             except (KeyError, IndexError):
                 pass
@@ -734,11 +769,12 @@ def _collapse2(left, right):
         return [mml.mrow(left), mml.mrow(right)]
 
 
-def over(tokens, i, left):
-    # otype, i = _string(tokens, i)
-    right, i = expression(tokens, i+1)
+def over(glyph, tokens, i, left):
+    # otype, i = _string(glyph, tokens, i)
+    attrib = diff(tokens, i)
+    right, i = expression(glyph, tokens, i+1)
 
-    frac = mml.mfrac(_collapse2(left, right))
+    frac = mml.mfrac(_collapse2(left, right), attrib=attrib)
 
     # unsupported
     # if otype == r"\bover":
@@ -747,39 +783,55 @@ def over(tokens, i, left):
     return [frac], i
 
 
-def fraction(tokens, i):
-    args, i = _binargs(tokens, i+1)
-    return mml.mfrac(args), i
+def fraction(glyph, tokens, i):
+    attrib = diff(tokens, i)
+    args, i = _binargs(glyph, tokens, i+1)
+    return mml.mfrac(args, attrib=attrib), i
 
 
-def choose(tokens, i, left):
-    right, i = expression(tokens, i+1)
+def choose(glyph, tokens, i, left):
+    attrib = diff(tokens, i)
+    right, i = expression(glyph, tokens, i+1)
 
-    lb, rb = mml.mo("("), mml.mo(")")
+    def _bracket(b): return mml.mo(b, attrib=attrib.copy())
+
+    lb, rb = map(_bracket, "()")
     children = _collapse2(left, right)
 
-    return [lb, mml.mfrac(children, linethickness="0"), rb], i
+    mfrac = mml.mfrac(children, linethickness="0", attrib=attrib.copy())
+
+    return [lb, mfrac, rb], i
 
 
-def binomial(tokens, i):
-    args, i = _binargs(tokens, i+1)
-    return mml.mfrac(args, linethickness="0"), i
+def binomial(glyph, tokens, i):
+    attrib = diff(tokens, i)
+    args, i = _binargs(glyph, tokens, i+1)
+
+    def _bracket(b): return mml.mo(b, attrib=attrib.copy())
+
+    lb, rb = map(_bracket, "()")
+    children = _collapse2(*args)
+
+    mfrac = mml.mfrac(args, linethickness="0", attrib=attrib.copy())
+    mrow = mml.mrow([lb, mfrac, rb])
+
+    return mrow, i
 
 
-def relation(tokens, i, left):
-    relation, i = relator(tokens, i)
+def relation(glyph, tokens, i, left):
+    relation, i = relator(glyph, tokens, i)
 
     try:
-        relation, i = scripted(tokens, i, relation)
+        relation, i = scripted(glyph, tokens, i, relation)
     except KeyError:
         pass
 
-    right, i = expression(tokens, i)
+    right, i = expression(glyph, tokens, i)
 
     return [*left, relation, *right], i
 
 
-def block_operation(tokens, i, left):
+def block_operation(glyph, tokens, i, left):
     type_map = {
         OVER: over,
         CHOOSE: choose,
@@ -787,39 +839,33 @@ def block_operation(tokens, i, left):
     }
     i = nonspace(tokens, i)
 
-    return type_map[tokens[i].type](tokens, i, left)
+    return type_map[tokens[i].type](glyph, tokens, i, left)
 
 
-def blocks(tokens, i):
-    node, i = expression(tokens, i)
+def blocks(glyph, tokens, i):
+    node, i = expression(glyph, tokens, i)
 
     while i < len(tokens):
         try:
-            node, i = block_operation(tokens, i, node)
+            node, i = block_operation(glyph, tokens, i, node)
         except KeyError:
             break
 
     return node, i
 
 
-def statement(tokens, i):
-    node, j = blocks(tokens, i)
-
-    return node, j
-
-
-def _line(tokens, i):
+def _line(glyph, tokens, i):
     row = []
     while i < len(tokens):
         try:
-            cell, i = blocks(tokens, i)
+            cell, i = blocks(glyph, tokens, i)
             row.append(cell)
             if i < len(tokens):
-                i = _col_sep(tokens, i)
+                i = _col_sep(glyph, tokens, i)
         except KeyError as e:
             try:
                 # in case of empty cell
-                i = _col_sep(tokens, i)
+                i = _col_sep(glyph, tokens, i)
                 row.append([])
             except KeyError:
                 break
@@ -830,18 +876,20 @@ def _line(tokens, i):
     return row, i
 
 
-def _equation(tokens, i):
+def _equation(glyph, tokens, i):
+    # almost identical to _table and _row
     table = []
     while i < len(tokens):
         try:
-            row, i = _line(tokens, i)
+            row, i = _line(glyph, tokens, i)
             table.append(row)
             if i < len(tokens):
-                i = _row_sep(tokens, i)
+                i = _row_sep(glyph, tokens, i)
         except KeyError:
             break
 
     table = [mml.mtr(row, columnalign="left") for row in table]
+    table = mml.mtable(table, displaystyle="true")
     return table, i
 
 
@@ -859,7 +907,7 @@ def _equation_number(n):
     return cell
 
 
-def enumeration(table, counter=1):
+def enumeration(table, counter):
     # mutates table
     for row in table:
         count = True
@@ -870,46 +918,73 @@ def enumeration(table, counter=1):
                 cell.remove(_NO_NUMBER)
                 count = False
 
-        number, inc = (counter, 1) if count else (None, 0)
-        counter += inc
+        number = next(counter) if count else None
 
         row.insert(0, _equation_number(number))
-    return table
 
 
-def formula(tokens, i):
-    # almost identical to _table and _row
-    table, i = _equation(tokens, i)
-    table = mml.mtable(table, displaystyle="true")
-    table = enumeration(table)
+def align(glyph, tokens, i):
+    table, i = _equation(glyph, tokens, i)
     return [table], i
 
 
-class Parser:
-    def __init__(self):
-        pass
+def inline(glyph, tokens, i):
+    node, j = blocks(glyph, tokens, i)
+    return node, j
+
+
+class MathParser:
+    _counter =  count(1)
+
+    def __init__(self, glyph, area=""):
+        self.glyph = glyph
+        self.area = area
 
     @staticmethod
-    def is_multiline(tokens):
-        return any(token.type == ROW_SEP for token in tokens)
+    def _attrib(display, area):
+        attrib = {"display": display}
 
-    def parse(self, tokens):
-        root = mml.math(attrib={
-            "class": "math",
-            "displaystyle": "true"
-        })
-        # tree = Tree(root)
+        class_ = f"math math--{display}"
+        if area:
+            class_ += f" marea--{area}"
+        attrib["class"] = class_
 
-        parser = formula if self.is_multiline(tokens) else statement
+        if display == "block":
+            attrib["displaystyle"] = "true"
 
-        nodes, i = parser(tokens, 0)
+        return attrib
 
-        assert i == len(tokens), f"Failed to parse near: {tokens[i]}"
+    def _parse(self, tokens, root=None, parser=inline):
+        if root is None:
+            root = mml.math()
 
-
-        if len(nodes) == 0:
-            nodes.append(mml.merror([mml.mtext("EMPTY EXPRESSION")]))
-
+        nodes, i = parser(self.glyph, tokens, 0)
         root.extend(nodes)
+
+        if 0 == len(nodes):
+            nodes.append(mml.merror([mml.mtext("EMPTY EXPRESSION")]))
+        elif i < len(tokens):
+            nodes.append(mml.merror([mml.mtext("PARSER ERROR")]))
+
+        return root
+
+
+    def parse(self, tokens, root=None, **options):
+        aligned = options.get("align", False)
+        display = options.get("display", "block" if aligned else "inline")
+        counter = options.get("counter", aligned)
+
+        parser = align if (display == "block") else inline
+
+        if isinstance(counter, int) and not isinstance(counter, bool):
+            # reset counter
+            self._counter = count(int(counter))
+
+        root = self._parse(tokens, root, parser)
+
+        if counter:
+            enumeration(root[0], self._counter)
+
+        root.attrib.update(self._attrib(self.area, display))
 
         return root

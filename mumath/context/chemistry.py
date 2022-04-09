@@ -125,6 +125,9 @@ _ELEMENTS = [
 ]
 
 
-symbols = {}
-for atomic_number, symbol, name in sorted(_ELEMENTS, key=len, reverse=True):
-    symbols[symbol] = symbols[name] = (symbol, normal())
+# We sort by symbol name length so He is captured before H
+def sym(t): return len(t[1])
+
+identifiers = {}
+for atomic_number, symbol, name in sorted(_ELEMENTS, key=sym, reverse=True):
+    identifiers[symbol] = identifiers[name] = (symbol, normal())

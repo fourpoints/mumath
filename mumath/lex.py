@@ -10,7 +10,7 @@ from context.tokens import tok_name
 # TokenInfo = NamedTuple(TokenInfo.__name__, TokenInfo.__annotations__)
 
 # shamelessly copied from python.tokenize, with an added flag
-TokenInfo = NamedTuple("TokenInfo", [
+_TokenInfo = NamedTuple("TokenInfo", [
     ("type", int),
     ("string", str),
     ("start", int),
@@ -19,7 +19,7 @@ TokenInfo = NamedTuple("TokenInfo", [
     ("flag", int),
 ])
 
-class TokenInfo(TokenInfo):
+class TokenInfo(_TokenInfo):
     def __repr__(self):
         return ('TokenInfo(type=%s, string=%r, start=%r, end=%r, line=%r, flag=%s)' %
                 self._replace(type=tok_name[self.type]))

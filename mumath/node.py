@@ -34,7 +34,7 @@ class Node(Element):
 
 
 class Collection(Element):
-    def __init__(self, tag, children=[], attrib={}, **extra):
+    def __init__(self, tag, children=(), attrib={}, **extra):
         super().__init__(tag, attrib, **extra)
         self.extend(children)
 

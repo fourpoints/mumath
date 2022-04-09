@@ -81,6 +81,10 @@ tests = [
 
     r"x =^^? 2 +_4 \mod 3",
 
+    r"\binom{x}{y} == {x \choose y}",
+
+    r"OH^- +H_3O^+ <-> 2H_2O",
+
     r"\[a\(b\)c\]",
 ]*1
 
@@ -118,11 +122,12 @@ if __name__ == "__main__":
     #         mml = mu.MathParser()
     #         text = ElementWriter.tostring(mml.parse(test))
 
-    mumath = MuMath()
+
+    mu = MuMath(area="chemistry")
     with Timer("NEW"):
         for test in tests:
             # print(test)
-            text = mumath.convert(test)
+            text = mu.convert(test, infer=True)
             # print(text)
 
     # from grammar import func_times

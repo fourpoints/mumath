@@ -1,7 +1,9 @@
 from context.tokens import *
-import context.dictionary as ctx
+import context.base as base
 import re
+from importlib import import_module
 from collections import namedtuple
+from collections.abc import Iterable
 
 
 # For diffs
@@ -71,21 +73,61 @@ ttypes = {
 
 
 class Glyph(namedtuple("Glyph", ttypes.values())):
+    flags = flags
+
     @classmethod
-    def from_context(cls, ctx):
-        return cls._make(getattr(ctx, name).copy() for name in cls._fields)
+    def from_base(cls):
+        glyph = cls._make(getattr(base, name).copy() for name in cls._fields)
+
+        glyph.identifiers.update(base.custom_identifiers)
+        glyph.identifiers.update(base.sets)
+        glyph.identifiers.update(base.greeks)
+        glyph.identifiers.update(base.chemistry)
+        glyph.identifiers.update(base.physics)
+        glyph.functions.update(base.custom_functions)
+        glyph.normalize()
+
+        return glyph
+
+    @classmethod
+    def empty(cls):
+        return cls._make({} for _ in cls._fields)
+
+    @classmethod
+    def from_area(cls, area=None, base=True):
+        glyph = cls.from_base() if base else cls.empty()
+
+        areas = _listify(area)
+        for area in areas:
+            m = import_module("." + area, "context")
+            for name in cls._fields:
+                old = getattr(glyph, name)
+                new = getattr(m, name, {})
+                old.update(new)
+
+        glyph.normalize()
+
+        return glyph
 
     def _ttype_name(self):
         # ttype_name is aligned with Glyph
         return {ttype: key for ttype, key in zip(ttypes, self)}
 
+    def normalize(self):
+        self.operators.update(normalize(self.operators))
+        self.binary_operators.update(normalize(self.binary_operators))
+        self.relations.update(normalize(self.relations))
+        self.functions.update(normalize(self.functions))
+        self.identifiers.update(normalize(self.identifiers))
+        self.brackets.update(normalize(self.brackets))
+
     @property
     def tokens(self):
-        return dict(_tokens(groups))
+        return dict(_tokens(self._ttype_name()))
 
     @property
     def keywords(self):
-        return dict(_keywords(groups))
+        return dict(_keywords(self._ttype_name()))
 
 
 # Match words without _ and numbers
@@ -121,7 +163,7 @@ def _normalize(attrib):
     elif isinstance(attrib, str):
         return (attrib, {})
     else:
-        raise TypeError
+        raise TypeError(f"Unknown type {type(attrib)} for {attrib}")
 
 
 def normalize(dict_):
@@ -132,32 +174,12 @@ def merge(dicts):
     return {key: value for d in dicts for key, value in d.items()}
 
 
-# groups = {key: merge(dicts) for key, dicts in groups.items()}
-
-_glyph = Glyph.from_context(ctx)
-_glyph.identifiers.update(ctx.custom_identifiers)
-_glyph.identifiers.update(ctx.sets)
-_glyph.identifiers.update(ctx.greeks)
-_glyph.functions.update(ctx.custom_functions)
-
-groups = _glyph._ttype_name()
-
-
-tokens = dict(_tokens(groups))
-keywords = dict(_keywords(groups))
-
-operators = normalize(groups[OPERATOR])
-binary_operators = normalize(groups[BINOP])
-relations = normalize(groups[RELATION])
-functions = normalize(groups[FUNCTION])
-identifiers = normalize(groups[IDENTIFIER])
-brackets = normalize(groups[NORM])
-hats = groups[HAT]
-shoes = groups[SHOE]
-environments = groups[ENVIRONMENT]
-fonts = groups[VARIANT]
-enclosures = groups[ENCLOSE]
-open_brackets = groups[OPEN]
-close_brackets = groups[CLOSE]
-col_separators = groups[COL_SEP]
-
+def _listify(var):
+    if var is None:
+        return ()
+    elif isinstance(var, str):
+        return [var]
+    elif isinstance(var, Iterable):
+        return var
+    else:
+        raise TypeError

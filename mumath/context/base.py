@@ -1,6 +1,8 @@
 attrib = dict
 def atomic(*args): return dict.fromkeys(args)
 
+# no functions in this file; this should be easily convertible to json/xml
+
 # group = lambda l: re.match(r'.*(r"\\.*?").*(&.*?;|\w+)"\)', l).groups()
 # fmt = lambda t: f'    {t[0]}: "{unescape(t[1])}",  # {t[1]}'
 # lambda ls: "\n".join(map(fmt, map(group, filter(None, str.splitlines(ls)))))
@@ -74,9 +76,9 @@ custom_identifiers = {
 
 
 custom_functions = {
-    r"f": "f",
-    r"g": "g",
-    r"h": "h",
+    r"f": ("f", attrib(form="prefix")),
+    r"g": ("g", attrib(form="prefix")),
+    r"h": ("h", attrib(form="prefix")),
 }
 
 
@@ -218,6 +220,8 @@ relations = {
     r">=": "≥",
     r"<=>": "⇔",
     r"==>": "⇒",
+    r"<->": "⟷",
+    r"==": "⩵",
     r"=": "=",
     r"<": "&lt;",  # <
     r">": "&gt;",  # >

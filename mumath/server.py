@@ -57,6 +57,7 @@ class MuMathHandler(http.server.SimpleHTTPRequestHandler):
 
         from .core import MuMath
         from .test import tests
+        from functools import partial
 
         if data is None:
             data = "\n".join(tests)
@@ -66,7 +67,8 @@ class MuMathHandler(http.server.SimpleHTTPRequestHandler):
                 return "<br>".join(map(func, lines.splitlines()))
             return _apply
 
-        transformed = apply(MuMath().convert)(data)
+        mu = MuMath(area="chemistry")
+        transformed = apply(partial(mu.convert, infer=True))(data)
 
         content = content.replace(b"$INPUT", data.encode("utf-8"))
         content = content.replace(b"$OUTPUT", transformed.encode("utf-8"))
