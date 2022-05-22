@@ -417,6 +417,9 @@ shoes = {
 
 
 environments = {
+    r"align":    (None, None),
+    r"equation": (None, None),
+
     r"matrix":  (None, None),
     r"pmatrix": ("(", ")"),
     r"bmatrix": ("[", "]"),
