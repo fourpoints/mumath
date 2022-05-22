@@ -88,9 +88,7 @@ class MuMathHandler(http.server.SimpleHTTPRequestHandler):
         return content
 
     def _get_content(self, data=""):
-        path = self._path
-        if path.is_dir():
-            path = path / "index.html"
+        path = Path(__file__).parent / "data" / "index.html"
 
         content = path.read_bytes()
         return self._update(content, data)

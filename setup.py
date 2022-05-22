@@ -32,6 +32,9 @@ options = {
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     },
+    "package_data": {
+        "mumath": ["data/index.html"],
+    },
     "install_requires": [],
     "extra_requires": {
         "markdown": ["markdown"],
