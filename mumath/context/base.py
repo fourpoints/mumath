@@ -84,7 +84,7 @@ custom_functions = {
 
 identifiers = {
     r"\?": "?",
-    r"\ell": ("ℓ,{}"),  # &ell;
+    r"\ell": ("ℓ", {}),  # &ell;
     # r"He": ("He", attrib(mathvariant="normal")),
     # r"Pb": ("Pb", attrib(mathvariant="normal")),
     # r"Tl": ("Tl", attrib(mathvariant="normal")),

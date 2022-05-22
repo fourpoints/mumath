@@ -9,6 +9,11 @@
             width: 30rem;
             height: 10rem;
         }
+        .source {
+            background-color: #eee;
+            padding: 1rem;
+        }
+
         /*/ MathJax/MathML /*/
         .MJXc-display, .MathJax_Display, div.MathJax_MathML {
             margin: .5em auto!important;
@@ -35,5 +40,9 @@
         <textarea name="mumath" class="text-box" id="input">$INPUT</textarea>
         <button type="submit">Convert</button>
     </form>
+
     <h2>Output</h2>
     <div id="output">$OUTPUT</div>
+
+    <h2>Source</h2>
+    <pre id="source" class="source">$SOURCE</pre>

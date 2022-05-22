@@ -1,8 +1,10 @@
-from context.tokens import *  # builtins.tokenizer does this so why not me
-from node import mml, Comment, _NO_NUMBER, clone, traverse
-# from functools import wraps
+from .context.tokens import *  # builtins.tokenizer does this so why not me
+from .node import mml, html, special
+from .node.util import clone, traverse
+from .util import listify
 from itertools import islice, count
-from functools import partial as partial, wraps
+from functools import partial, wraps
+import xml.etree.ElementTree as ET
 
 
 # https://github.com/pengbo-learn/python-math-expression-parser
@@ -34,10 +36,6 @@ def wrapped(hof):
     return _hof
 
 partial = wrapped(partial)
-
-
-class NoMatch(Exception):
-    pass
 
 
 def _print(tokens):
@@ -72,7 +70,6 @@ def _unbox(el): return _unbox(el[0]) if _isbox(el) else el
 def number(glyph, tokens, i):
     return mml.mn(tokens[i].string, diff(tokens, i)), i+1
 
-
 def element(tokens, i, mtype, mapping):
     symbol, attrib = map_get(mapping, tokens[i].string)
     attrib = diff(tokens, i, attrib)
@@ -96,7 +93,7 @@ def string_literal(glyph, tokens, i):
 
 
 def comment(glyph, tokens, i):
-    el = Comment(comment)
+    el = html.Comment(comment)
     el.text = tokens[i].string[1:].lstrip()
     return el, i+1
 
@@ -127,7 +124,7 @@ def middle(glyph, tokens, i, **attrib):
 
 def no_number(glyph, tokens, i):
     # Singleton object
-    return _NO_NUMBER, i+1
+    return special.NO_NUMBER, i+1
 
 
 def text(glyph, tokens, i):
@@ -182,7 +179,7 @@ def _subsups(glyph, tokens, i):
         try:
             ttype = tokens[i].type
             if ttype not in {SUP, SUB}:
-                raise KeyError
+                break
 
             node, i = factor(glyph, tokens, i+1)
             if ttype == last:
@@ -662,12 +659,14 @@ def is_space(el):
     return False
 
 
+EMBELLISHABLE_FIRST = {"msub", "msup", "msubsup", "munder", "mover", "munderover", "mmultiscripts", "mfrac"}
+EMBELLISHABLE_ANY = {"mstyle", "mphantom", "mpadded", "mrow"}
 def is_embellished(el):
     if el.tag == "mo":
         return True
-    if el.tag in {"msub", "msup", "msubsup", "munder", "mover", "munderover", "mmultiscripts", "mfrac"} and is_embellished(el[0]):
+    if el.tag in EMBELLISHABLE_FIRST and is_embellished(el[0]):
         return True
-    if el.tag in {"mstyle", "mphantom", "mpadded", "mrow"}:
+    if el.tag in EMBELLISHABLE_ANY:
         em = sum(map(is_embellished, el))
         sp = sum(map(is_space, el))
         # There can only be one embellished child; the rest must be space-like
@@ -679,17 +678,14 @@ def _embellish(el):
     if el.tag == "mo" and el.get("form"):
         el.set("form", "prefix")
         el.set("rspace", "0")
-    elif el.tag in {"msub", "msup", "msubsup", "munder", "mover", "munderover", "mmultiscripts", "mfrac"}:
+    elif el.tag in EMBELLISHABLE_FIRST:
         _embellish(el[0])
-    elif el.tag in {"mstyle", "mphantom", "mpadded", "mrow"}:
+    elif el.tag in EMBELLISHABLE_ANY:
         em = sum(map(is_embellished, el))
         sp = sum(map(is_space, el))
         # There can only be one embellished child; the rest must be space-like
         if em == 1 and em + sp == len(el):
-            for c in el:
-                if c.tag == "mo":
-                    _embellish(c)
-                    break
+            _embellish(next(filter(lambda c: c.tag == "mo", el)))
     else:
         # not an operator
         pass
@@ -707,6 +703,10 @@ def term(glyph, tokens, i):
 
             if prod.tag == "mrow" and prod[0].text == "(":
                 _embellish(products[-1])
+
+            # FIXME
+            # if products[-1].get("embellished") and prod.get("grouping"):
+            #     embellish(products[-1])
 
             products.append(prod)
 
@@ -736,6 +736,7 @@ def expression(glyph, tokens, i):
     expression = []
 
     # Check if first element is binary operator
+    # If so, make it a unary operator
     try:
         node, i = binop(glyph, tokens, i)
         node.set("prefix", "true")
@@ -912,10 +913,10 @@ def enumeration(table, counter):
     for row in table:
         count = True
         for cell in row:
-            if _NO_NUMBER in cell:
+            if special.NO_NUMBER in cell:
                 # This will only remove one if there are multiple
                 # But why would anyone include multiple
-                cell.remove(_NO_NUMBER)
+                cell.remove(special.NO_NUMBER)
                 count = False
 
         number = next(counter) if count else None
@@ -936,17 +937,17 @@ def inline(glyph, tokens, i):
 class MathParser:
     _counter =  count(1)
 
-    def __init__(self, glyph, area=""):
+    def __init__(self, glyph, **options):
         self.glyph = glyph
-        self.area = area
+        self.options = options
 
-    @staticmethod
-    def _attrib(display, area):
+    def _attrib(self, display):
+        # area = self.area
         attrib = {"display": display}
 
         class_ = f"math math--{display}"
-        if area:
-            class_ += f" marea--{area}"
+        # if area:
+        #     class_ += " ".join(f" marea--{a}" for a in area)
         attrib["class"] = class_
 
         if display == "block":
@@ -954,10 +955,7 @@ class MathParser:
 
         return attrib
 
-    def _parse(self, tokens, root=None, parser=inline):
-        if root is None:
-            root = mml.math()
-
+    def _parse(self, tokens, root, parser):
         nodes, i = parser(self.glyph, tokens, 0)
         root.extend(nodes)
 
@@ -968,13 +966,20 @@ class MathParser:
 
         return root
 
+    def _aligned(self, tokens):
+        if self.options.get("infer", False):
+            return any(t.string in {r";", r"\\"} for t in tokens)
+        else:
+            return self.options.get("align", False)
 
-    def parse(self, tokens, root=None, **options):
-        aligned = options.get("align", False)
-        display = options.get("display", "block" if aligned else "inline")
-        counter = options.get("counter", aligned)
-
+    def parse(self, tokens, root=None):
+        aligned = self._aligned(tokens)
+        display = self.options.get("display", "block" if aligned else "inline")
+        counter = self.options.get("counter", aligned)
         parser = align if (display == "block") else inline
+
+        if root is None:
+            root = mml.math()
 
         if isinstance(counter, int) and not isinstance(counter, bool):
             # reset counter
@@ -985,6 +990,6 @@ class MathParser:
         if counter:
             enumeration(root[0], self._counter)
 
-        root.attrib.update(self._attrib(self.area, display))
+        root.attrib.update(self._attrib(display))
 
-        return root
+        return ET.ElementTree(root)

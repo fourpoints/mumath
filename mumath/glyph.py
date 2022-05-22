@@ -1,12 +1,20 @@
-from context.tokens import *
-import context.base as base
+from .context.tokens import *
+from .context import base
+from .util import listify
 import re
 from importlib import import_module
 from collections import namedtuple
-from collections.abc import Iterable
+from types import ModuleType, SimpleNamespace
+
+try:
+    from functools import cache
+except importError:
+    from functools import lru_cache as cache
 
 
 # For diffs
+# The functions look weird, but they set the first and second bit
+# to either 0 or 1. E.g. `(+1).__or__(0b00) == 0b01`.
 flags = {
     OPEN_NEXT: (+1).__or__,
     SHUT_NEXT: (~1).__and__,
@@ -54,14 +62,15 @@ ttypes = {
 
     # general components
     RELATION: "relations",
-    NUMBER: "numbers",
     IDENTIFIER: "identifiers",
     OPERATOR: "operators",
     BINOP: "binary_operators",
     FUNCTION: "functions",
+    NORM: "brackets",
+
+    NUMBER: "numbers",
     HAT: "hats",
     SHOE: "shoes",
-    NORM: "brackets",
     OPEN: "open_brackets",
     CLOSE: "close_brackets",
     COL_SEP: "col_separators",
@@ -73,6 +82,7 @@ ttypes = {
 
 
 class Glyph(namedtuple("Glyph", ttypes.values())):
+    areas = {}
     flags = flags
 
     @classmethod
@@ -85,6 +95,7 @@ class Glyph(namedtuple("Glyph", ttypes.values())):
         glyph.identifiers.update(base.chemistry)
         glyph.identifiers.update(base.physics)
         glyph.functions.update(base.custom_functions)
+
         glyph.normalize()
 
         return glyph
@@ -94,20 +105,74 @@ class Glyph(namedtuple("Glyph", ttypes.values())):
         return cls._make({} for _ in cls._fields)
 
     @classmethod
-    def from_area(cls, area=None, base=True):
-        glyph = cls.from_base() if base else cls.empty()
-
-        areas = _listify(area)
-        for area in areas:
-            m = import_module("." + area, "context")
-            for name in cls._fields:
-                old = getattr(glyph, name)
-                new = getattr(m, name, {})
-                old.update(new)
-
+    def from_namespace(cls, area):
+        glyph = cls._make(getattr(area, name, {}).copy() for name in cls._fields)
         glyph.normalize()
 
         return glyph
+
+    @classmethod
+    def _get(cls, area):
+        # Lazy getter
+        context = cls.areas[area]
+        if not isinstance(context, Glyph):
+            if isinstance(context, str):
+                context = import_module(context)
+            elif isinstance(context, ModuleType):
+                pass
+            elif isinstance(context, dict):
+                context = SimpleNamespace(**context)
+            else:
+                raise TypeError(f"Invalid type '{type(context)}' for area.")
+
+            context = cls.from_namespace(context)
+            cls.areas[area] = context
+        return context
+
+    @classmethod
+    @cache
+    def from_area(cls, area=None, base=True):
+        if base is True:
+            glyph = cls.from_base()
+        elif base is False:
+            glyph = cls.empty()
+        elif isinstance(base, Glyph):
+            glyph = base
+        else:
+            raise TypeError(f"Invalid type '{type(base)}' for base.")
+
+        areas = listify(area)
+        for area in areas:
+            glyph += cls._get(area)
+
+        return glyph
+
+    def __iadd__(self, other):
+        for old, new in zip(self, other):
+            old.update(new)
+        return self
+
+    @classmethod
+    def register_area(cls, area, context):
+        cls.areas[area] = context
+
+    @classmethod
+    def register_areas(cls, area=None, **areas):
+        if area is None:
+            for area, context in areas.items():
+                cls.register_area(area, context)
+        if isinstance(area, dict):
+            for area, context in area.items():
+                cls.register_area(area, context)
+        else:
+            raise TypeError(f"Invalid type {type(area)} for area.")
+
+
+    @classmethod
+    def register_extensions(cls):
+        # from importlib import metadata
+        # metadata.entry_points(group="mumath.extensions")
+        pass
 
     def _ttype_name(self):
         # ttype_name is aligned with Glyph
@@ -128,6 +193,15 @@ class Glyph(namedtuple("Glyph", ttypes.values())):
     @property
     def keywords(self):
         return dict(_keywords(self._ttype_name()))
+
+
+# This should probably be defined at instance-level
+# But that requires some refactoring
+Glyph.register_areas({
+    "chemistry": "mumath.context.chemistry",
+    "statistics": "mumath.context.statistics",
+})
+Glyph.register_extensions()
 
 
 # Match words without _ and numbers
@@ -172,14 +246,3 @@ def normalize(dict_):
 
 def merge(dicts):
     return {key: value for d in dicts for key, value in d.items()}
-
-
-def _listify(var):
-    if var is None:
-        return ()
-    elif isinstance(var, str):
-        return [var]
-    elif isinstance(var, Iterable):
-        return var
-    else:
-        raise TypeError

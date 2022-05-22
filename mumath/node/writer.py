@@ -1,10 +1,9 @@
-from node import Node, Collection, Empty, Comment
-
+from . import Node, Collection, Empty, Comment
 
 def _open(el):
     label = [el.tag]
     for k, v in el.attrib.items():
-        label.append(f'{k}="{v}"')
+        label.append(f'{k}="{v}"' if v != "" else k)
     return " ".join(label)
 
 

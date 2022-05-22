@@ -1,22 +1,35 @@
 import http.server
 import socketserver
+import importlib
+import sys
+import html
+from functools import partial
 from http.server import HTTPStatus
 from pathlib import Path
 from urllib.parse import unquote
-import importlib
-import sys
+from .core import MuMath
+from .util import listify
 
 # Most of this is copied from http.server:
 # https://github.com/python/cpython/blob/3.9/Lib/http/server.py
 
-if __name__ == "__main__" and __package__ is None:
-    __package__ = "mumath2"
+# if __name__ == "__main__" and __package__ is None:
+#     __package__ = "mumath2"
 
 
 class MuMathHandler(http.server.SimpleHTTPRequestHandler):
-    @property
-    def _is_test(self):
-        return self._path.name.startswith("mumath")
+    # __init__ is socketserver.BaseRequestHandler.__init__
+    # __init__ is http.server.SimpleHTTPRequestHandler.__init__
+
+
+    def __init__(self, *args, case=None, area=None, **kwargs):
+        self.case = case
+        self.area = listify(area)
+        super().__init__(*args, **kwargs)
+
+    # @property
+    # def _is_test(self):
+    #     return self._path.name.startswith("mumath")
 
     @property
     def _path(self):
@@ -43,57 +56,51 @@ class MuMathHandler(http.server.SimpleHTTPRequestHandler):
         post_data = self.rfile.read(content_length)
         post_data = post_data.replace(b"+", b" ")
         post_data = post_data.decode("utf-8")
+
         parameters = dict(map(split, post_data.split("&")))
 
         return parameters
 
-    @staticmethod
-    def _update(content, data):
+    def _update(self, content, data):
         # hacky way to force reload
-        for mod in list(sys.modules):
-            if mod.startswith("mumath2"):
-                del sys.modules[mod]
-        # importlib.reload(mumath2)
+        # for mod in list(sys.modules):
+        #     if mod.startswith("mumath"):
+        #         del sys.modules[mod]
+        # # importlib.reload(mumath)
 
-        from .core import MuMath
-        from .test import tests
-        from functools import partial
-
-        if data is None:
-            data = "\n".join(tests)
+        if data == "":
+            # data = "\n".join(tests)
+            data = "\n"  # str.splitlines doesn't like empty strings
 
         def apply(func):
             def _apply(lines):
                 return "<br>".join(map(func, lines.splitlines()))
             return _apply
 
-        mu = MuMath(area="chemistry")
-        transformed = apply(partial(mu.convert, infer=True))(data)
+        mu = MuMath.from_area(self.area)
+        image = apply(partial(mu.convert))(data)
+        source = html.escape(image)
 
         content = content.replace(b"$INPUT", data.encode("utf-8"))
-        content = content.replace(b"$OUTPUT", transformed.encode("utf-8"))
+        content = content.replace(b"$OUTPUT", image.encode("utf-8"))
+        content = content.replace(b"$SOURCE", source.encode("utf-8"))
 
         return content
 
-    def _get_content(self, data=None):
+    def _get_content(self, data=""):
         path = self._path
         if path.is_dir():
             path = path / "index.html"
 
-        with open(path, mode="rb") as f:
-            content = f.read()
-
-        if self._is_test:
-            return self._update(content, data)
-        else:
-            return content
+        content = path.read_bytes()
+        return self._update(content, data)
 
     def do_GET(self):
         if self._path.name == "favicon.ico":
             self.send_error(HTTPStatus.NOT_FOUND, "File not found")
             return
 
-        content = self._get_content()
+        content = self._get_content(case)
 
         self._set_headers(content)
         self._set_content(content)
@@ -185,24 +192,38 @@ if __name__ == "__main__":
                         default=8000, type=int,
                         nargs='?',
                         help='Specify alternate port [default: 8000]')
+
     parser.add_argument('--open', action='store_true',
-                        default=False,
-                        help='Open new tab')
-    parser.add_argument('--test', action='store_true',
-                        default=False,
-                        help='Run test file')
+                        help='Open in new tab')
+    parser.add_argument('--area', '-a', nargs='*',
+                        help='Select dictionary')
+    mexparser = parser.add_mutually_exclusive_group()
+    mexparser.add_argument('--example', action='store_true',
+                        help='Run example cases')
+    mexparser.add_argument('--equation', '-e',
+                        help='Pass equation as argument')
+    mexparser.add_argument('--file', '-f',
+                        help='Open file')
 
     args = parser.parse_args()
     if args.cgi:
         handler_class = http.server.CGIHTTPRequestHandler
     else:
-        if args.test:
-            test_directory = (Path(args.directory) / __file__).parent.as_posix()
-            args.directory = test_directory
+        if args.example:
+            case = "e^\\tau = 1\nI = \\matrix[1,0;0,1]"
+        elif args.equation:
+            case = args.equation
+        elif args.file:
+            case = Path(args.file).read_text(encoding="utf-8")
+        else:
+            case = ""
 
-        directory = args.directory if not args.test else test_directory
-
-        handler_class = partial(MuMathHandler, directory=args.directory)
+        handler_class = partial(
+            MuMathHandler,
+            directory=args.directory,
+            case=case,
+            area=args.area,
+        )
 
     # ensure dual-stack is not disabled; ref #38907
     class DualStackServer(http.server.ThreadingHTTPServer):
@@ -213,7 +234,7 @@ if __name__ == "__main__":
                     socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
             return super().server_bind()
 
-    print(args.directory)
+    # print(args.directory)
 
     serve(
         HandlerClass=handler_class,

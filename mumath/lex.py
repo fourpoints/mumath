@@ -3,7 +3,7 @@ import re
 import io
 from typing import NamedTuple
 from itertools import chain
-from context.tokens import tok_name
+from .context.tokens import tok_name
 
 # fun equivalent
 # def TokenInfo(type: str, string: str, start: str, end: int, line: int): pass
@@ -25,7 +25,6 @@ class TokenInfo(_TokenInfo):
                 self._replace(type=tok_name[self.type]))
 
 
-
 def _token_error_msg(line, pos):
     return "\n".join(["Unknown token:", line, " "*pos + "^"*(len(line) - pos)])
 
@@ -41,9 +40,14 @@ class Lexer:
             f"({pattern})" for pattern in symbols
         ), flags=re.UNICODE)
 
+    @classmethod
+    def from_glyph(cls, glyph):
+        return cls(glyph.tokens, glyph.keywords, glyph.flags)
+
     def _tokenize(self, stream):
         if isinstance(stream, str):
             stream = io.StringIO(stream)
+
         flag = 0
         for lineno, line in enumerate(stream, start=1):
             pos = 0
