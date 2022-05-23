@@ -30,8 +30,12 @@ Start server in tab from file
 $ python -m mumath.server --open --file "./path.tex"
 ```
 
-## Use with markdown
+## Changelog
+* `1.2.0`: Fix spaces not being included. Refactor `Glyph` module.
+* `1.1.2`: Include Markdown extension. First PyPi release.
 
+
+## Use with markdown
 Include `mumath` for `$$...$$` and `mumath-inline` for `$...$` expressions
 in markdown. Environment parameters are passed down in either the first line
 for blocks or inside brackets for inline elements.
@@ -61,7 +65,8 @@ Here is how trigonometry functions can be added to a new `trigonometry` area.
 It's worth noting that these already exist as `\sin`, `\cos` and `\tan`, as
 serves just as an example. It is recommended to start keywords with `\`
 whenever possible, as using too many custom keywords may be slow. The tokenizer
-is optimized to look for keywords starting with `\`.
+is optimized to look for keywords starting with `\`. Using `\sin` also helps
+keeping LATEX compatibility.
 
 ```py
 from mumath import Glyph
@@ -91,6 +96,10 @@ LATEX-compatible.
 
 The `\matrix` operator also functions differently in that the brackets are
 remembered, i.e. `\matrix[a]` will use square brackets.
+
+`\begin{align/equation}` does not support numbering. Instead a `counter`
+argument is passed to the parser.
+
 
 ### Simple equations
 

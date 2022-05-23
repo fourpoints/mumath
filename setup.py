@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+from mumath import __version__
 
 
 long_description = """
@@ -19,7 +20,7 @@ packages = find_packages()
 
 options = {
     "name": "mumath",
-    "version": "1.1.2",
+    "version": __version__,
     "author": "::fourpoints",
     "description": "LATEX to MathML conversion tool",
     "long_description": long_description,
