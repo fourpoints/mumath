@@ -44,8 +44,8 @@ def _alias_attributes(attributes):
     }
 
     # first attribute is positional language parameter
-    (att, val), attributes = peek(attributes, default=(None, None))
-    if att is not None and val is None:
+    (att, val), attributes = peek(attributes, default=("#", None))
+    if not att.startswith("#") and val is None:
         pop(attributes)
         yield ("area", LANG_ALIAS.get(att, att))
 
@@ -64,6 +64,11 @@ def _options(attributes):
     attribs = {}
     for att, val in attributes:
         (options if att in option_keys else attribs)[att] = val
+
+    if "linenos" in options:
+        counter = options.pop("linenos")
+        options["counter"] = True if counter is None else int(counter)
+
     return options, attribs
 
 
@@ -110,7 +115,13 @@ class MuMathProcessor(BlockProcessor):
         if content is None:
             return False
 
-        options, _, content = content.partition("\n")
+        if content.startswith("\\"):
+            # since $$\begin{align} is common
+            # though \begin{align} isn't really supported
+            options = ""
+        else:
+            options, _, content = content.partition("\n")
+
         options, attributes = options_attributes(options)
 
         glyph = Glyph.from_area(options.pop("area", None))

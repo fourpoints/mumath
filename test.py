@@ -14,7 +14,13 @@ tests = tests.read_text(encoding="utf-8")
 tests = tests.splitlines()*1
 
 # tests = [
-#     "{+}{f}(x) = 2",
+#     r"{+}{f}(x) = 2",
+#     r"\alpha + \beta = \gamma",
+#     r"(x,y)",
+#     r"\},\\\,",
+#     r"He",
+#     r"x\;y",
+#     r"sin(x)",
 # ]
 
 
@@ -42,12 +48,6 @@ class Timer():
 if __name__ == "__main__":
     if args.markdown:
         import markdown
-        # from mumath.glyph import Glyph
-        # Glyph.register_area("chem", {
-        #     "identifiers": {
-        #         "H": ("H", {"mathvariant": "normal"}),
-        #     }
-        # })
 
 
         extensions = ["sane_lists", "tables", "smarty", MuMark(), InlineMuMark()]
@@ -69,6 +69,13 @@ this paragraph contains $1+2+3$ math
         print(text)
 
     else:
+        # from mumath.glyph import Glyph
+        # Glyph.register_area("trigonometry", {
+        #     "functions": {
+        #         r"sin": ("sin", {"form": "prefix"}),
+        #     },
+        # })
+
         # import addup.formatters.mumath as mu
         # from addup.writer import ElementWriter
         # with Timer("OLD"):

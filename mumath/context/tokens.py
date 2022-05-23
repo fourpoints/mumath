@@ -55,6 +55,7 @@ DISPLAYSTYLE = 47
 PAD = 48
 SHOE = 49
 ENVIRONMENT = 50
+WORD = 51
 
 tok_name = {value: name
             for name, value in globals().items()

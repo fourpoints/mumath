@@ -8,7 +8,7 @@ def atomic(*args): return dict.fromkeys(args)
 # lambda ls: "\n".join(map(fmt, map(group, filter(None, str.splitlines(ls)))))
 
 
-keyword = atomic(r"\\[^\W\d_]+")
+# keyword = atomic(r"\\[^\W\d_]+")
 text_separator = atomic(r"\$")
 subb = atomic(r"\_\_")
 sub = atomic(r"\_")
@@ -27,7 +27,7 @@ defaults = {
     r"\\\$": "$",
     r"\\\#": "#",
     r"\\\_": "_",
-    r"\\\\": "\\",
+    # r"\\\\": "\\",
     r"\\\.": ".",
     r"\\\|": "|",
 }
@@ -51,6 +51,7 @@ binom = atomic(r"\binom")
 root = atomic(r"\root")
 displaystyle = atomic(r"\displaystyle")
 pad = atomic(r"\pad")
+words = atomic(r"[^\W\d_]+")
 
 
 numbers = atomic(
@@ -113,14 +114,15 @@ identifiers = {
     r"\angle": "∠",  # &angle;
 }
 
+identifiers.update(custom_identifiers)
 
 operators = {
-    r"\sum": ("∑", attrib(form="prefix", movablelimits="true", largeop="true")),
-    r"\int": ("∫", attrib(form="prefix", movablelimits="true", largeop="true")),  # not Sigma!
+    # r"\sum": ("∑", attrib(form="prefix", movablelimits="true", largeop="true")),
+    # r"\int": ("∫", attrib(form="prefix", movablelimits="true", largeop="true")),  # not Sigma!
     r"\lim": ("lim", attrib(form="prefix", movablelimits="true")),
     r"\argmin": ("argmin", attrib(form="prefix", movablelimits="true")),
     r"\to": ("→", attrib(form="infix")),
-    r"\in": ("∈", attrib(form="infix")),
+    # r"\in": ("∈", attrib(form="infix")),
     r"\det": ("det", attrib(form="prefix", rspace="0")),
     r"\nabla": ("∇", attrib(form="prefix", rspace="0")),  # &nabla;
     r"\del": ("∇", attrib(form="prefix", rspace="0")),  # &Del;
@@ -271,7 +273,7 @@ relations = {
     r"\iff": "⇔",  # &Leftrightarrow;
     r"\equivalently": "⇔",  # &Leftrightarrow;
     r"\mapsto": "↦",  # &mapsto;
-    r"\to": "→",  # &rightarrow;
+    # r"\to": "→",  # &rightarrow;
     r"\longmapsto": "⟼",  # &longmapsto;
     r"\leadsto": "⤳",  # &rarrc;
 
@@ -391,6 +393,8 @@ functions = {
     r"\mellin": ("ℳ", attrib(form="prefix")),  # &Mellintrf;
 }
 
+operators.update(custom_functions)
+
 hats = {
     r"\\\~": "&tilde;",
     r"\\\^": "^",
@@ -442,7 +446,7 @@ brackets = {
 
 open_brackets = {
     r"\left": None,
-    r"{": None,
+    r"\{": None,
 
     r"\(":         "(",
     r"\lparent":   "(",
@@ -462,7 +466,7 @@ open_brackets = {
 
 close_brackets = {
     r"\right": None,
-    r"}": None,
+    r"\}": None,
 
     r"\)":         ")",
     r"\rparent":   ")",
@@ -482,9 +486,9 @@ close_brackets = {
 col_separators = {
     r"\middle": None,
 
-    r"\,": "&InvisibleComma;",  # &ic;
+    r"\\,": "&InvisibleComma;",  # &ic;
     r",": ",",
-    r"\\,": None,
+    # r"\\": None,
     r"&": None,
 }
 
@@ -534,8 +538,8 @@ enclosures = {
 }
 
 spaces = {
-    # r"\ ": &nbsp; &NonBreakingSpace;
-    r"\;": {"width": "3pt"},
+    # r"\\ ": &nbsp; &NonBreakingSpace;
+    r"\\;": {"width": "3pt"},
 	r"\quad": {"width": "1em"},
 	r"\thinspace": {"width": "1pt"},
 	r"\enspace": {"width": "5pt"},
@@ -560,6 +564,7 @@ sets = {
     r"\sphere": "𝕊",
 }
 
+identifiers.update(sets)
 
 greeks = {
     r"\alpha": "α",  # &alpha;
@@ -618,29 +623,4 @@ greeks = {
     r"\Omega": "Ω",  # &Omega;
 }
 
-chemistry = {
-    r"\alembic": "⚗",  # &#x2697;
-    r"\atom": "⚛",  # &#x269b;
-    r"\radioactive": "☢",  # &#x2622;
-    r"\biohazard": "☣",  # &#x2623;
-    r"\poisonold": "☠",  # &#x2620;
-    r"\equilibrium": "⇌",  # &Equilibrium;
-    r"\reverseequilibrium": "⇋",  # &ReverseEquilibrium;
-    r"\biequation": "⇄",  # &rightleftarrows;
-    r"\requation": "→",  # &rightarrow;
-    r"\Requation": "⟶",  # &longrightarrow;
-    r"\lequation": "←",  # &leftarrow;
-    r"\Lequation": "⟵",  # &longleftarrow;
-    r"\aqua": "q",  # q
-    r"\liquid": "l",  # l
-    r"\gas": "g",  # g
-    r"\solid": "s",  # s
-    r"\togas": "↑",  # &uparrow;
-    r"\tosolid": "↓",  # &downarrow;
-}
-
-physics = {
-    r"\degree": "°",  # &deg;
-    r"\hbar": "ℏ",  # &planck;
-    r"\h": "ℎ",  # &planckh;
-}
+identifiers.update(greeks)

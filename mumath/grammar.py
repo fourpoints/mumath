@@ -44,7 +44,7 @@ def _print(tokens):
 
 def map_get(mapping, key):
     # utility function
-    return mapping.get(key, (key, {}))
+    return mapping.property(key, (key, {}))
 
 
 def nonspace(tokens, i):
@@ -57,10 +57,8 @@ def _string(glyph, tokens, i):
     return tokens[i].string, i+1
 
 
-def _argument(glyph, tokens, i):
-    arg, i = factor(glyph, tokens, i)
-    arg = "".join(arg.itertext()).strip()
-    return arg, i
+def _variant(glyph, tokens, i):
+    return tokens[i].variant, i+1
 
 
 def _isbox(el): return el.tag == "mrow" and len(el) == 1
@@ -71,26 +69,31 @@ def number(glyph, tokens, i):
     return mml.mn(tokens[i].string, diff(tokens, i)), i+1
 
 def element(tokens, i, mtype, mapping):
-    symbol, attrib = map_get(mapping, tokens[i].string)
+    symbol, attrib = map_get(mapping, tokens[i].variant)
     attrib = diff(tokens, i, attrib)
     return mtype(symbol, attrib), i+1
 
 def identifier(glyph, tokens, i):
-    return element(tokens, i, mml.mi, glyph.identifiers)
+    return element(tokens, i, mml.mi, glyph)
 
 def operator(glyph, tokens, i):
-    return element(tokens, i, mml.mo, glyph.operators)
+    return element(tokens, i, mml.mo, glyph)
 
 def relator(glyph, tokens, i):
-    return element(tokens, i, mml.mo, glyph.relations)
+    return element(tokens, i, mml.mo, glyph)
 
 def binary_operator(glyph, tokens, i):
-    return element(tokens, i, mml.mo, glyph.binary_operators)
-
+    return element(tokens, i, mml.mo, glyph)
 
 def string_literal(glyph, tokens, i):
     return mml.ms(tokens[i].string[1:-1], diff(tokens, i)), i+1
 
+def space(glyph, tokens, i):
+    attrib = map_get(glyph, tokens[i].variant)
+    return mml.mspace(attrib), i+1
+
+def word(glyph, tokens, i):
+    return mml.mi(tokens[i].string), i+1
 
 def comment(glyph, tokens, i):
     el = html.Comment(comment)
@@ -102,24 +105,24 @@ def _separator(glyph, tokens, i, ttype, stretch, mapping, attrib):
     i = nonspace(tokens, i)
     if tokens[i].type != ttype:
         raise KeyError
-    b, i = _string(glyph, tokens, i)
+    b, i = _variant(glyph, tokens, i)
     if b == stretch:
-        b, i = _string(glyph, tokens, i)
+        b, i = _variant(glyph, tokens, i)
         attrib["stretchy"] = "true"
-    b = mapping.get(b, b)
+    b = mapping[b].property
     return mml.mo(b, **diff(tokens, i-1, attrib)), i
 
 
 def open_bracket(glyph, tokens, i, **attrib):
-    return _separator(glyph, tokens, i, OPEN, r"\left", glyph.open_brackets, attrib)
+    return _separator(glyph, tokens, i, OPEN, r"\left", glyph, attrib)
 
 
 def close_bracket(glyph, tokens, i, **attrib):
-    return _separator(glyph, tokens, i, CLOSE, r"\right", glyph.close_brackets, attrib)
+    return _separator(glyph, tokens, i, CLOSE, r"\right", glyph, attrib)
 
 
 def middle(glyph, tokens, i, **attrib):
-    return _separator(glyph, tokens, i, COL_SEP, r"\middle", glyph.col_separators, attrib)
+    return _separator(glyph, tokens, i, COL_SEP, r"\middle", glyph, attrib)
 
 
 def no_number(glyph, tokens, i):
@@ -361,8 +364,10 @@ def group(glyph, tokens, i):
 
 
 def class_(glyph, tokens, i):
-    name, i = _argument(glyph, tokens, i+1)
+    name, i = factor(glyph, tokens, i+1)
     node, i = factor(glyph, tokens, i)
+
+    name = "".join(name.itertext()).strip()
 
     node.set("class", name)
 
@@ -379,10 +384,10 @@ def displaystyle(glyph, tokens, i):
 
 def enclose(glyph, tokens, i):
     attrib = diff(tokens, i)
-    name, i = _string(glyph, tokens, i)
+    variant, i = _variant(glyph, tokens, i)
     node, i = factor(glyph, tokens, i)
 
-    notation = glyph.enclosures[name]
+    notation = glyph[variant].property
 
     # good?
     if _isbox(node):
@@ -403,15 +408,15 @@ def pad(glyph, tokens, i):
 
 
 def function(glyph, tokens, i):
-    symbol, attrib = map_get(glyph.functions, tokens[i].string)
+    symbol, attrib = map_get(glyph, tokens[i].variant)
     return mml.mo(symbol, diff(tokens, i, attrib)), i+1
 
 
 def variant(glyph, tokens, i):
-    font, i = _string(glyph, tokens, i)
+    variant, i = _variant(glyph, tokens, i)
     node, i = factor(glyph, tokens, i)
 
-    style = glyph.fonts[font]
+    style = glyph[variant].property
     fontable = {"mi", "mn", "mo", "ms", "mtext"}
 
     for el in traverse(node):
@@ -423,11 +428,11 @@ def variant(glyph, tokens, i):
 
 def hat(glyph, tokens, i):
     attrib = diff(tokens, i)
-    htype, i = _string(glyph, tokens, i)
+    htype, i = _variant(glyph, tokens, i)
     node, i = factor(glyph, tokens, i)
     node = _unbox(node)
 
-    hat = mml.mo(glyph.hats[htype], attrib=attrib)
+    hat = mml.mo(glyph[htype].property, attrib=attrib)
 
     mover = mml.mover([node, hat], accent="true")
     return mover, i
@@ -435,11 +440,11 @@ def hat(glyph, tokens, i):
 
 def shoe(glyph, tokens, i):
     attrib = diff(tokens, i)
-    htype, i = _string(glyph, tokens, i)
+    stype, i = _variant(glyph, tokens, i)
     node, i = factor(glyph, tokens, i)
     node = _unbox(node)
 
-    hat = mml.mo(glyph.shoes[htype], attrib=attrib)
+    hat = mml.mo(glyph[stype].property, attrib=attrib)
 
     mover = mml.munder([node, hat], accent="true")
     return mover, i
@@ -447,13 +452,13 @@ def shoe(glyph, tokens, i):
 
 def norm(glyph, tokens, i):
     attrib = diff(tokens, i)
-    ntype, i = _string(glyph, tokens, i)
+    ntype, i = _variant(glyph, tokens, i)
     node, i = product(glyph, tokens, i)
     node = _unbox(node)
 
     def _bracket(b): return mml.mo(b, stretchy="true", attrib=attrib.copy())
 
-    lb, rb = map(_bracket, glyph.brackets[ntype])
+    lb, rb = map(_bracket, glyph[ntype].property)
 
     norm = mml.mrow([lb, node, rb])
     return norm, i
@@ -461,7 +466,7 @@ def norm(glyph, tokens, i):
 
 def sqrt(glyph, tokens, i):
     attrib = diff(tokens, i)
-    _, i = _string(glyph, tokens, i)
+    _, i = _variant(glyph, tokens, i)
     node, i = product(glyph, tokens, i)
     node = _unbox(node)
 
@@ -471,7 +476,7 @@ def sqrt(glyph, tokens, i):
 
 def root(glyph, tokens, i):
     attrib = diff(tokens, i)
-    _, i = _string(glyph, tokens, i)
+    _, i = _variant(glyph, tokens, i)
     [root, base], i = _binargs(glyph, tokens, i)
 
     # can be of the form \root[2+2]{3}
@@ -555,18 +560,24 @@ def matrix(glyph, tokens, i):
 
     return matrix, i
 
+def _environment(glyph, tokens, i):
+    lb, i = open_bracket(glyph, tokens, i)
+    mvar, i = _variant(glyph, tokens, i)
+    rb, i = close_bracket(glyph, tokens, i)
+    return mvar, i
+
 
 def environment(glyph, tokens, i):
-    mtype, i = _argument(glyph, tokens, i+1)
+    mvar, i = _environment(glyph, tokens, i+1)
     table, i = _table(glyph, tokens, i)
     i = nonspace(tokens, i)
     assert tokens[i].string == r"\end"
-    mtype2, i = _argument(glyph, tokens, i+1)
-    assert mtype == mtype2
+    mvar2, i = _environment(glyph, tokens, i+1)
+    assert mvar == mvar2
 
     def _bracket(b): return mml.mo(b, stretchy="true")
 
-    left, right = map(_bracket, glyph.environments[mtype])
+    left, right = map(_bracket, glyph[mvar].property)
 
     bracketed = []
     if left.text is not None: bracketed.append(left)
@@ -581,9 +592,11 @@ def environment(glyph, tokens, i):
 def factor(glyph, tokens, i):
     type_map = {
         IDENTIFIER: identifier,
-        ENVIRONMENT: identifier,
+        WORD: word,
+        # ENVIRONMENT: identifier,
         NUMBER: number,
         OPERATOR: operator,
+        SPACE: space,
         SUB: prescripts,
         SUP: prescripts,
         PRESCRIPT: prescripts,
@@ -592,7 +605,6 @@ def factor(glyph, tokens, i):
         OPEN: group,
         STRING: string_literal,
 
-        IDENTIFIER: identifier,
         FUNCTION: function,
         LARGEOP: operator,
         OPERATOR: operator,
@@ -975,7 +987,7 @@ class MathParser:
     def parse(self, tokens, root=None):
         aligned = self._aligned(tokens)
         display = self.options.get("display", "block" if aligned else "inline")
-        counter = self.options.get("counter", aligned)
+        counter = self.options.get("counter")
         parser = align if (display == "block") else inline
 
         if root is None:

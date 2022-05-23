@@ -128,6 +128,26 @@ _ELEMENTS = [
 # We sort by symbol name length so He is captured before H
 def sym(t): return len(t[1])
 
-identifiers = {}
+identifiers = {
+    r"\alembic": "⚗",  # &#x2697;
+    r"\atom": "⚛",  # &#x269b;
+    r"\radioactive": "☢",  # &#x2622;
+    r"\biohazard": "☣",  # &#x2623;
+    r"\poisonold": "☠",  # &#x2620;
+    r"\equilibrium": "⇌",  # &Equilibrium;
+    r"\reverseequilibrium": "⇋",  # &ReverseEquilibrium;
+    r"\biequation": "⇄",  # &rightleftarrows;
+    r"\requation": "→",  # &rightarrow;
+    r"\Requation": "⟶",  # &longrightarrow;
+    r"\lequation": "←",  # &leftarrow;
+    r"\Lequation": "⟵",  # &longleftarrow;
+    r"\aqua": "q",  # q
+    r"\liquid": "l",  # l
+    r"\gas": "g",  # g
+    r"\solid": "s",  # s
+    r"\togas": "↑",  # &uparrow;
+    r"\tosolid": "↓",  # &downarrow;
+}
+
 for atomic_number, symbol, name in sorted(_ELEMENTS, key=sym, reverse=True):
     identifiers[symbol] = identifiers[name] = (symbol, normal())
