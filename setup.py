@@ -1,5 +1,11 @@
 from setuptools import setup, find_packages
-from mumath import __version__
+from pathlib import Path
+from distutils.util import convert_path
+
+
+# Import __version__ (ugly, but works)
+version = Path(__file__).parent / "mumath" / "config.py"
+exec(version.read_text(encoding="utf-8"))
 
 
 long_description = """
