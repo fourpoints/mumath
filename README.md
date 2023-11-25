@@ -33,6 +33,7 @@ $ python -m mumath.server --open --file "./path.tex"
 ## Changelog
 * `1.2.0`: Fix spaces not being included. Refactor `Glyph` module.
 * `1.1.2`: Include Markdown extension. First PyPi release.
+* `1.3.3`: Forgot to unwrap text nodes, making node text `None`. Fixed `importError` typo.
 
 
 ## Use with markdown
