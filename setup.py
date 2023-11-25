@@ -8,7 +8,7 @@ version = Path(__file__).parent / "mumath" / "config.py"
 exec(version.read_text(encoding="utf-8"))
 
 
-long_description = """
+long_description = """\
 # Mumath
 Mumath is a LATEX-like to MathML conversion tool written in Python.
 

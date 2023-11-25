@@ -2,6 +2,13 @@ import xml.etree.ElementTree as ET
 from functools import partial
 from types import SimpleNamespace as Namespace
 from .mathml import node, collection, empty
+import html as _html
+
+
+def Text(text):
+    el = ET.Element(str)
+    el.text = text
+    return el
 
 
 class Element(ET.Element):
@@ -18,10 +25,11 @@ class Element(ET.Element):
 class Node(Element):
     def __init__(self, tag, text=None, attrib={}, **extra):
         super().__init__(tag, attrib, **extra)
-        self.text = text
+        # self.text = text
+        self.append(Text(text))
 
     def __repr__(self):
-        return f"<{self._name()}>{self.text}</{self.tag}>"
+        return f"<{self._name()}>{self[0].text}</{self.tag}>"
 
 
 

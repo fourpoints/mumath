@@ -29,7 +29,6 @@ defaults = {
     r"\\\_": "_",
     # r"\\\\": "\\",
     r"\\\.": ".",
-    r"\\\|": "|",
 }
 
 
@@ -131,8 +130,9 @@ operators = {
 
     # r"d": ("d", attrib(form="prefix", rspace="0")),
     # r"-->": ("→", attrib(form="infix", stretchy="true")),
-    r"\|": ("‖", attrib()),  # &Vert;
+    r"\\\|": ("‖", attrib()),  # &Vert;
     r"\*": ("&InvisibleTimes;", attrib()),  # &it;
+    r"\+": ("&#8292;", attrib()),  # For mixed numbers
     r"\¤": ("&ApplyFunction;", attrib()),  # &af;
     r"!": ("!", attrib(form="postfix", lspace="0")),
 
@@ -486,6 +486,8 @@ close_brackets = {
 col_separators = {
     r"\middle": None,
 
+    r"\|": "|",
+    r":": ":",
     r"\\,": "&InvisibleComma;",  # &ic;
     r",": ",",
     # r"\\": None,

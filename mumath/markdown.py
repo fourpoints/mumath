@@ -8,6 +8,28 @@ from .util import peek, pop
 from .glyph import Glyph
 from .lex import Lexer
 from .grammar import MathParser
+from itertools import chain
+
+
+# Copied from util.xml
+# python-markdown doesn't support Text() nodes, and uses tag.lower(), so
+# we need to convert back to normal style ET.Elements.
+def elify(node):
+    el = ET.Element(node.tag, node.attrib)
+
+    start = 0
+    if len(node) and node[0].tag is str:
+        el.text = node[0].text
+        start = 1
+
+    for cnode in node[start:]:
+        if cnode.tag is str:
+            # assumes text nodes aren't consecutive
+            el[-1].tail = cnode.text
+        else:
+            el.append(elify(cnode))
+
+    return el
 
 
 def _parse_attributes(attributes):
@@ -96,7 +118,7 @@ class MuMathProcessor(BlockProcessor):
                 before, after = end_block[:n.start(0)], end_block[n.end(0):]
 
                 # This reverts the blocking
-                content = "\n\n".join(blocks[0:i+1])
+                content = "\n\n".join(chain(blocks[0:i], [before]))
 
                 blocks[i] = after
 
@@ -132,17 +154,17 @@ class MuMathProcessor(BlockProcessor):
         root = parser.parse(tokens).getroot()
         root.attrib.update(attributes)
 
-        parent.append(root)
+        parent.append(elify(root))
 
 
 class InlineMuMathProcessor(InlineProcessor):
     def handleMatch(self, m, data):
         content = m.group(1)
 
-        if content.startswith("("):
-            # this leaves the first ( intact
+        if content.startswith("{"):
+            # this leaves the first { intact
             # but it is ignored in the parser
-            options, _, content = content.partition(")")
+            options, _, content = content.partition("}")
         else:
             options = ""
         options, attributes = options_attributes(options)
@@ -152,7 +174,7 @@ class InlineMuMathProcessor(InlineProcessor):
         parser = MathParser(glyph, align=False, **options)
 
         tokens = list(lexer.tokenize(content))
-        root = parser.parse(tokens).getroot()
+        root = elify(parser.parse(tokens).getroot())
         root.attrib.update(attributes)
 
         return root, m.start(0), m.end(0)

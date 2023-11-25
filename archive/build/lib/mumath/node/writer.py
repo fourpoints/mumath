@@ -7,14 +7,10 @@ def _open(el):
     return " ".join(label)
 
 
-def text_content(el):
-    return "".join(el.itertext())
-
-
 def _write(write, el, indent, level, end):
     ind = level*indent
     if isinstance(el, Node):
-        write(f"{ind}<{_open(el)}>{text_content(el)}</{el.tag}>{end}")
+        write(f"{ind}<{_open(el)}>{el.text}</{el.tag}>{end}")
     elif isinstance(el, Collection):
         write(f"{ind}<{_open(el)}>{end}")
         for child in el:

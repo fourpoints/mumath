@@ -78,7 +78,7 @@ class MuMathHandler(http.server.SimpleHTTPRequestHandler):
             return _apply
 
         mu = MuMath.from_area(self.area)
-        image = apply(partial(mu.convert))(data)
+        image = apply(mu.convert)(data)
         source = html.escape(image)
 
         content = content.replace(b"$INPUT", data.encode("utf-8"))

@@ -7,7 +7,7 @@ from .context.tokens import tok_name
 
 try:
     from functools import cache
-except importError:
+except ImportError:
     from functools import lru_cache as cache
 
 # fun equivalent

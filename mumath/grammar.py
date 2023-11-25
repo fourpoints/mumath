@@ -351,11 +351,16 @@ def group(glyph, tokens, i):
 
     mrow = mml.mrow()
 
-    if left.text and right.text:
+    # BUGFIX 2023-02-13: we use Text child instead of el.text
+    # The fix itself is a bug since it exposes implementation details
+    def has_text(xel):
+        return len(xel) > 0 and xel[0].tag is str and xel[0].text is not None
+
+    if has_text(left) and has_text(right):
         mrow.extend([left, *group, right])
-    elif left.text:
+    elif has_text(left):
         mrow.extend([left, *group])
-    elif right.text:
+    elif has_text(right):
         mrow.extend([*group, right])
     else:
         mrow.extend(group)
