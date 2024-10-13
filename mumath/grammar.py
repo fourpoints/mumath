@@ -106,7 +106,8 @@ def _separator(glyph, tokens, i, ttype, stretch, mapping, attrib):
     if tokens[i].type != ttype:
         raise KeyError
     b, i = _variant(glyph, tokens, i)
-    if b == stretch:
+    # could _string be used instead?
+    if mapping[b].pattern == stretch:
         b, i = _variant(glyph, tokens, i)
         attrib["stretchy"] = "true"
     b = mapping[b].property

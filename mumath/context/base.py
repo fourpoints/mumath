@@ -75,11 +75,11 @@ custom_identifiers = {
 }
 
 
-custom_functions = {
-    r"f": ("f", attrib(form="prefix")),
-    r"g": ("g", attrib(form="prefix")),
-    r"h": ("h", attrib(form="prefix")),
-}
+# custom_functions = {
+#     r"f": ("f", attrib(form="prefix")),
+#     r"g": ("g", attrib(form="prefix")),
+#     r"h": ("h", attrib(form="prefix")),
+# }
 
 
 identifiers = {
@@ -131,9 +131,9 @@ operators = {
     # r"d": ("d", attrib(form="prefix", rspace="0")),
     # r"-->": ("→", attrib(form="infix", stretchy="true")),
     r"\\\|": ("‖", attrib()),  # &Vert;
-    r"\*": ("&InvisibleTimes;", attrib()),  # &it;
-    r"\+": ("&#8292;", attrib()),  # For mixed numbers
-    r"\¤": ("&ApplyFunction;", attrib()),  # &af;
+    r"\\\*": ("*", attrib()),  # &it;
+    r"\\\+": ("&#8292;", attrib()),  # For mixed numbers
+    r"\\\¤": ("&ApplyFunction;", attrib()),  # &af;
     r"!": ("!", attrib(form="postfix", lspace="0")),
 
 
@@ -167,10 +167,13 @@ operators.update(defaults)
 
 binary_operators = {
     r"\+": "+",
-    r"\-": "-",
-    r"\*": "*",
+    r"\-": "–",
+    r"\*": "&InvisibleTimes;",
     r"\/": "/",
     r"\.": ".",
+
+    r"\pm": "±",
+    r"\mp": "∓",
 
     r"\times": "×",  # &times;
     r"\div": "÷",  # &div;
@@ -393,7 +396,7 @@ functions = {
     r"\mellin": ("ℳ", attrib(form="prefix")),  # &Mellintrf;
 }
 
-operators.update(custom_functions)
+# operators.update(custom_functions)
 
 hats = {
     r"\\\~": "&tilde;",

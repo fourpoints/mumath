@@ -31,9 +31,13 @@ $ python -m mumath.server --open --file "./path.tex"
 ```
 
 ## Changelog
+* `1.3.7` / 2024-10-13: Hyphen is now converted to minus sign.
+* `1.3.6`: Fixed `\left` and `\right` not applying `stretchy="true"`.
+* `1.3.5`: Swapped `\*` to mean `*` and `*` to mean `&InvisibleTimes;`.
+* `1.3.4`: Added `\pm := ±` and `\mp := ∓`.
+* `1.3.3`: Forgot to unwrap text nodes, making node text `None`. Fixed `importError` typo.
 * `1.2.0`: Fix spaces not being included. Refactor `Glyph` module.
 * `1.1.2`: Include Markdown extension. First PyPi release.
-* `1.3.3`: Forgot to unwrap text nodes, making node text `None`. Fixed `importError` typo.
 
 
 ## Use with markdown
