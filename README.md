@@ -440,13 +440,18 @@ mathml
 
 ### In conjunction with Markdown
 
-mumath+markdown=mumark
-```md
-# Mumark
-This is an equation: $a^2 + b^2 = c^2$.
+```py
+import markdown
+
+text = """# Mumark
+This is an equation: $a^2 + b^2 = c^2$."""
+
+md = markdown.Markdown(extensions=["mumath", "mumath-inline"])
+md.convert(text)
 ```
 
-html+mathml
+output (pretty printed):
+
 ```xml
 <h1>Mumark</h1>
 <p>This is an equation: <math display="inline" class="math math--inline">
