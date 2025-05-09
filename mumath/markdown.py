@@ -154,7 +154,11 @@ class MuMathProcessor(BlockProcessor):
         root = parser.parse(tokens).getroot()
         root.attrib.update(attributes)
 
-        parent.append(elify(root))
+        # Firefox fix; overflow does not work on <math> elements
+        ff = ET.Element("div", {"class": "ff-overflow"})
+        ff.append(elify(root))
+
+        parent.append(ff)
 
 
 class InlineMuMathProcessor(InlineProcessor):
@@ -188,7 +192,10 @@ class InlineMuMark(Extension):
     def extendMarkdown(self, md):
         MATH_PATTERN = r"\$(.*?)\$"
         md.inlinePatterns.register(
-            InlineMuMathProcessor(MATH_PATTERN, md), "mumath-inline", 110)
+            InlineMuMathProcessor(MATH_PATTERN, md),
+            "mumath-inline",
+            self.getConfig("priority", 110),
+        )
 
 
 class MuMark(Extension):
@@ -198,4 +205,7 @@ class MuMark(Extension):
 
     def extendMarkdown(self, md):
         md.parser.blockprocessors.register(
-            MuMathProcessor(md.parser), "mumath", self.getConfig("priority", 110))
+            MuMathProcessor(md.parser),
+            "mumath",
+            self.getConfig("priority", 110),
+        )

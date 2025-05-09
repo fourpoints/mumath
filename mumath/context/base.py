@@ -365,35 +365,35 @@ relations = {
 }
 
 functions = {
-    r"\arg": ("arg", attrib(form="prefix")),
-    r"\deg": ("deg", attrib(form="prefix")),
-    r"\cos": ("cos", attrib(form="prefix")),
-    r"\cosh": ("cosh", attrib(form="prefix")),
-    r"\sin": ("sin", attrib(form="prefix")),
-    r"\sinh": ("sinh", attrib(form="prefix")),
-    r"\tan": ("tan", attrib(form="prefix")),
-    r"\tanh": ("tanh", attrib(form="prefix")),
-    r"\exp": ("exp", attrib(form="prefix")),
-    r"\log": ("log", attrib(form="prefix")),
-    r"\lg": ("lg", attrib(form="prefix")),
-    r"\ln": ("ln", attrib(form="prefix")),
-    r"\lim": ("lim", attrib(form="prefix", movablelimits="true")),
-    r"\sup": ("sup", attrib(form="prefix", movablelimits="true")),
-    r"\limsup": ("limsup", attrib(form="prefix", movablelimits="true")),
-    r"\inf": ("inf", attrib(form="prefix", movablelimits="true")),
-    r"\liminf": ("liminf", attrib(form="prefix", movablelimits="true")),
-    r"\max": ("max", attrib(form="prefix", movablelimits="true")),
-    r"\argmax": ("argmax", attrib(form="prefix", movablelimits="true")),
-    r"\min": ("min", attrib(form="prefix", movablelimits="true")),
-    r"\argmin": ("argmin", attrib(form="prefix", movablelimits="true")),
-    r"\det": ("det", attrib(form="prefix")),
-    r"\diag": ("diag", attrib(form="prefix")),
-    r"\ker": ("ker", attrib(form="prefix")),
-    r"\mod": ("mod", attrib(form="prefix")),
-    r"\sgn": ("sgn", attrib(form="prefix")),
-    r"\fourier": ("ℱ", attrib(form="prefix")), # &Fouriertrf;
-    r"\laplace": ("ℒ", attrib(form="prefix")),  # &Laplacetrf;
-    r"\mellin": ("ℳ", attrib(form="prefix")),  # &Mellintrf;
+    r"\arg": ("arg", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\deg": ("deg", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\cos": ("cos", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\cosh": ("cosh", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\sin": ("sin", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\sinh": ("sinh", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\tan": ("tan", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\tanh": ("tanh", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\exp": ("exp", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\log": ("log", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\lg": ("lg", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\ln": ("ln", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\lim": ("lim", attrib(form="prefix", movablelimits="true", lspace="0", rspace="0")),
+    r"\sup": ("sup", attrib(form="prefix", movablelimits="true", lspace="0", rspace="0")),
+    r"\limsup": ("limsup", attrib(form="prefix", movablelimits="true", lspace="0", rspace="0")),
+    r"\inf": ("inf", attrib(form="prefix", movablelimits="true", lspace="0", rspace="0")),
+    r"\liminf": ("liminf", attrib(form="prefix", movablelimits="true", lspace="0", rspace="0")),
+    r"\max": ("max", attrib(form="prefix", movablelimits="true", lspace="0", rspace="0")),
+    r"\argmax": ("argmax", attrib(form="prefix", movablelimits="true", lspace="0", rspace="0")),
+    r"\min": ("min", attrib(form="prefix", movablelimits="true", lspace="0", rspace="0")),
+    r"\argmin": ("argmin", attrib(form="prefix", movablelimits="true", lspace="0", rspace="0")),
+    r"\det": ("det", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\diag": ("diag", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\ker": ("ker", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\mod": ("mod", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\sgn": ("sgn", attrib(form="prefix", lspace="0", rspace="0")),
+    r"\fourier": ("ℱ", attrib(form="prefix", lspace="0", rspace="0")), # &Fouriertrf;
+    r"\laplace": ("ℒ", attrib(form="prefix", lspace="0", rspace="0")),  # &Laplacetrf;
+    r"\mellin": ("ℳ", attrib(form="prefix", lspace="0", rspace="0")),  # &Mellintrf;
 }
 
 # operators.update(custom_functions)

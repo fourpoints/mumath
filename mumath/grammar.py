@@ -415,6 +415,14 @@ def pad(glyph, tokens, i):
 
 def function(glyph, tokens, i):
     symbol, attrib = map_get(glyph, tokens[i].variant)
+
+    # Check if next token isn't bracket
+    j = nonspace(tokens, i+1)
+    if len(tokens) < j:
+        nt = tokens[j]  # next token
+        if nt.type != OPEN or nt.type == OPEN and not nt.string:
+            attrib = attrib.copy()
+            attrib.pop("rspace", None)
     return mml.mo(symbol, diff(tokens, i, attrib)), i+1
 
 
@@ -773,6 +781,8 @@ def expression(glyph, tokens, i):
                 pass
         except KeyError:
             break
+
+    # if expression[0].tag == "mo" and expression[1] == "mrow" and expression[1][0]
 
     return expression, i
 

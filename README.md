@@ -31,6 +31,7 @@ $ python -m mumath.server --open --file "./path.tex"
 ```
 
 ## Changelog
+* `1.3.8` / 2025-05-09: Correct spacing around functions.
 * `1.3.7` / 2024-10-13: Hyphen is now converted to minus sign.
 * `1.3.6`: Fixed `\left` and `\right` not applying `stretchy="true"`.
 * `1.3.5`: Swapped `\*` to mean `*` and `*` to mean `&InvisibleTimes;`.
